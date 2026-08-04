@@ -6,25 +6,17 @@
       "orcid": "0000-0001-6232-9096"
     }
   ],
-  "description": "Source code for Convergence Analysis of Gradient Descent Optimization (2026).",
+  "description": "Source code for No Time to Die: HERACLES — Special-Agent Mission Software (2026). Local-only PROJECT BOND film package; not deposited.",
   "keywords": [
-    "optimization algorithms",
-    "gradient descent",
-    "convergence analysis",
-    "numerical methods",
-    "mathematical programming",
-    "reproducible research",
-    "infrastructure automation"
+    "DNA-targeted bioweapon countermeasure",
+    "target specificity",
+    "poison-garden toxicology",
+    "dose-response",
+    "poison delivery forensics",
+    "trace detection",
+    "deterministic modelling"
   ],
   "license": "MIT",
-  "related_identifiers": [
-    {
-      "identifier": "10.5281/zenodo.20417136",
-      "relation": "isVersionOf",
-      "scheme": "doi"
-    }
-  ],
-  "title": "Convergence Analysis of Gradient Descent Optimization",
-  "upload_type": "software",
-  "version": "2.5.2"
+  "title": "No Time to Die: HERACLES — Special-Agent Mission Software",
+  "version": "1.0.0"
 }

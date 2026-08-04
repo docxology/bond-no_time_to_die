@@ -1,11 +1,24 @@
-# Abstract {#sec:abstract}
+# Abstract
 
-This paper presents a convergence study of **fixed-step gradient descent** on a convex quadratic, framed as the computational exemplar of the [Research Project Template](https://github.com/docxology/template). The implementation lives in `projects/working/bond/no_time_to_die/src/optimizer.py`; experiments and figures are orchestrated by `projects/working/bond/no_time_to_die/scripts/optimization_analysis.py` and hydrated into the manuscript through `scripts/z_generate_manuscript_variables.py`, so tables and prose track `output/data/optimization_results.csv` after every pipeline run.
+{{HERACLES_TITLE}} — mission codename **{{HERACLES_CODENAME}}** — reduces the
+three pharmaco-forensic concepts of *No Time to Die* (2021) to deterministic,
+tested mathematics with a shared provenance ledger. The pure domain core in
+`src/no_time_to_die/` comprises three modules: a DNA-targeted bioweapon
+countermeasure model (Heracles target specificity and delivery kinetics), a
+poison-garden toxicology dose–response catalog, and poison-delivery forensics
+for trace detection on the Vesper's glass. A thin adapter binds that core to
+the frozen bond-api mission protocol so the film is discoverable and drivable
+by the BOND suite orchestrator.
 
-We evaluate {{CONFIG_NUM_STEP_SIZES}} step sizes from $\alpha = {{CONFIG_MIN_STEP_SIZE}}$ to $\alpha = {{CONFIG_MAX_STEP_SIZE}}$, spanning conservative, near-optimal, aggressive, and divergent regimes for a unit Hessian model. The build chain exercises template infrastructure end-to-end: scientific helpers (`infrastructure.scientific.stability`, `infrastructure.scientific.benchmarking`), validation, rendering (`infrastructure/rendering/pdf_renderer.py`), and reporting. Accessibility-oriented plotting defaults (colourblind-safe palette, 300 dpi exports) are centralized in `src/figures/` and `src/analysis/`.
+The poison-garden catalog profiles **{{HERACLES_NUM_TOXINS}}** flora toxins
+with published-approximation LD50 values and Hill slopes, spanning
+{{HERACLES_MIN_LD50}} to {{HERACLES_MEDIAN_LD50}} mg/kg across the median. The
+HERACLES countermeasure demonstration selects a target guide that attains
+{{HERACLES_SPECIFICITY}}% specificity and a combined neutralization
+probability of {{HERACLES_NEUTRALIZATION}}%. Forensic trace detection clears a
+limit-of-detection signal-to-noise ratio of {{HERACLES_LOD_SNR}}, recovering a
+dosable residue from the glass.
 
-Contributions are **methodological** and **architectural**. On the methods side, we relate empirical iteration counts and error decay to the scalar contraction factor $\rho(\alpha) = |1-\alpha|$ and document cases where runs hit $N_{\max} = {{CONFIG_MAX_ITERATIONS}}$ before meeting the gradient tolerance. On the architecture side, we demonstrate a zero-mock test suite on project `src/` (see [test_optimizer.py](https://github.com/docxology/template/blob/main/projects/working/bond/no_time_to_die/tests/test_optimizer.py)), automated six-figure analysis, and reproducibility metadata (configuration hash, artifact counts) injected into [@sec:reproducibility].
-
-**Results (this configuration):** {{RESULT_NUM_CONVERGED}} of {{CONFIG_NUM_STEP_SIZES}} grid points report `converged=True` in the CSV; non-convergent rows flag either slow progress at small $\alpha$ under the iteration cap or instability when $|1-\alpha| \geq 1$. The analytical minimizer remains $x^\ast = {{RESULT_OPTIMUM_X}}$ with $f(x^\ast) = {{RESULT_OPTIMUM_F}}$ for the configured $(A,b)$.
-
-**Keywords:** {{CONFIG_KEYWORDS}}
+The entire assessment is deterministic (fixed seed, no random draws, no
+wall-clock dependence) and reproduced under Python {{PYTHON_VERSION}}, satisfying
+the suite's coverage, mock-free, and lineage gates.

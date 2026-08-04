@@ -1,10 +1,13 @@
-# References {#sec:references}
+# References
 
-Bibliography lives in [`manuscript/references.bib`](references.bib) and is read by Pandoc during PDF render. The build pipeline invokes Pandoc with `--natbib`, so every `[@key]` citation in the manuscript is rewritten to the appropriate `\cite{}`/`\citep{}`/`\citet{}` LaTeX command and resolved against the bib file.
-
-To validate that `references.bib` is syntactically clean and contains the required fields per entry type:
-
-```bash
-uv run python -m infrastructure.reference.citation.cli validate \
-    projects/working/bond/no_time_to_die/manuscript/references.bib --strict
-```
+1. Fukunaga, C., & Purvis, N. (2021). *No Time to Die* [Film]. Eon
+   Productions / Metro-Goldwyn-Mayer.
+2. Bond Mission Protocol. (2026). *bond-api: the frozen mission contract for
+   the BOND film suite* (v0.1.0). PROJECT BOND, Layer 1.
+3. Bond Mission Orchestration. (2026). *bond-orchestrator: the BOND suite DAG
+   runner* (phase-1). PROJECT BOND, Layer 3.
+4. Bond Layer 0 Foundation. (2026). *bond-utilities: Q-BRANCH ciphers,
+   codenames, and mission_io provenance* (phase-1). PROJECT BOND, Layer 0.
+5. Hill, A. V. (1910). The possible effects of the aggregation of the
+   molecules of haemoglobin on its dissociation curves. *The Journal of
+   Physiology*, 40(suppl), iv–vii.

@@ -1,58 +1,39 @@
-# Reproducibility Certification {#sec:reproducibility}
+# Reproducibility
 
-This section provides a machine-verifiable reproducibility certificate for the complete study. Every metric below is computed by the analysis pipeline and injected into the manuscript at render time — establishing a cryptographic chain of custody from configuration to publication.
+This package treats reproducibility as a hard constraint enforced by tests,
+not a prose promise. The guarantees are:
 
-## Configuration Provenance
+## Deterministic computation
 
-| Property                          | Value                 |
-| --------------------------------- | --------------------- |
-| Config hash (SHA-256, truncated)  | `{{CONFIG_HASH}}`     |
-| Paper version                     | {{CONFIG_VERSION}}    |
-| First author                      | {{CONFIG_FIRST_AUTHOR}} |
-| Keywords                          | {{CONFIG_KEYWORDS}}   |
+The domain core makes no random draws and performs no wall-clock reads. All
+demonstration inputs are fixed  constants in `src/no_time_to_die/demo.py` and
+`manuscript/config.yaml`; `seed = 11` is stable. The mission outcome carries a
+`Provenance` record with the package version, the seed, and a sha256
+`input_hash` of the canonical inputs (`demo.input_hash()`) so any outcome can
+be audited without re-execution.
 
-The configuration hash changes whenever any parameter in `config.yaml` is modified, ensuring that every rendered PDF is traceable to a specific configuration state.
+## Live manuscript metrics
 
-## Generated Artifact Registry
+Every numeric value in the prose sections flows through a resolved `HERACLES_*` token from `src/no_time_to_die/manuscript_variables.py`, computed from the shared demo result;
+none are hand-authored. The token cross-reference test fails if any section token
+is undefined, and `z_generate_manuscript_variables.py` fails in strict mode on
+any unresolved token.
 
-The analysis pipeline produced the following artifacts, each validated by `infrastructure.validation.output.validator`:
+## Verification commands
 
-| Category                           | Count                  |
-| ---------------------------------- | ---------------------- |
-| Publication-quality figures        | {{ARTIFACT_FIGURES}}   |
-| Structured data files (CSV/JSON)   | {{ARTIFACT_DATA_FILES}} |
-| Analysis reports                   | {{ARTIFACT_REPORTS}}   |
-| **Total artifacts**                | **{{ARTIFACT_TOTAL}}** |
+From the package root:
 
-## Numerical Validation Summary
+```bash
+uv run pytest tests/ --cov=src --cov-fail-under=90
+uv run ruff check src/ scripts/ tests/ && uv run ruff format --check src/ scripts/ tests/
+uv run mypy src/ scripts/
+# Lineage gate — pattern is bracket-split so this doc cannot trip its own
+# check (template[_]code_project resolves to the literal string when run).
+rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**' \
+  --glob '!output/**' || echo Clean
+git diff --exit-code   # clean tree after regeneration
+```
 
-### Convergence Verification
-
-Within the configured grid, **{{RESULT_NUM_CONVERGED}}** of **{{CONFIG_NUM_STEP_SIZES}}** runs satisfied `gradient_descent()` convergence (`{{RESULT_ALL_CONVERGED}}` indicates whether every row in `optimization_results.csv` converged).
-
-- Converged step sizes: {{RESULT_CONVERGED_STEP_SIZES}}
-- Non-convergent or hit-iteration-cap step sizes: {{RESULT_DIVERGED_STEP_SIZES}}
-- Smallest recorded iteration count: {{RESULT_MIN_ITERATIONS}} (at $\alpha = {{RESULT_BEST_STEP_SIZE}}$)
-- Largest recorded iteration count: {{RESULT_MAX_ITERATIONS}} (at $\alpha = {{RESULT_WORST_STEP_SIZE}}$)
-- Mean iterations across all rows: {{RESULT_AVG_ITERATIONS}}
-
-### Numerical Stability
-
-Stability score from `infrastructure.scientific.stability`: **{{STABILITY_SCORE}}** (out of 1.00)
-
-The stability analysis tested {{CONFIG_STABILITY_CELLS}} parameter combinations ({{CONFIG_NUM_STABILITY_STARTS}} starting points $\times$ {{CONFIG_NUM_STABILITY_STEPS}} step sizes), confirming uniform convergence across the entire parameter space.
-
-### Benchmark Demonstration
-
-This exemplar also demonstrates `infrastructure.benchmark`. The thin orchestrator `scripts/04_benchmark_stage.py` calls `src/benchmark_support.py`, which evaluates the pure `quadratic_function` across fixed seeded inputs and turns reproducible completion, finiteness, and output-stability facts into boolean rubric checks. Those checks are scored through `infrastructure.benchmark.score_rubric` against a weighted `RubricSet`, then rendered with `scores_to_markdown` into the byte-stable `output/reports/benchmark_report.json` with a deterministic objective-value figure. Real timing still executes as a runtime diagnostic, but it is not serialized into tracked evidence.
-
-## Madlib Injection Verification
-
-This manuscript demonstrates the template's "madlib" capability: every quantitative claim is injected from computed data at render time. The substitution system processed the following variables:
-
-- **Configuration variables**: Drawn from `manuscript/config.yaml` (`experiment:` section)
-- **Result variables**: Computed from `output/data/optimization_results.csv`
-- **Stability variables**: Extracted from `output/reports/stability_analysis.json`
-- **Provenance variables**: Generated at substitution time (timestamps, hashes, versions)
-
-To verify: modifying any value in `config.yaml` and re-running the pipeline will automatically update every corresponding claim in this document. No manual transcription is required or permitted.
+The suite enforces ≥90% line+branch coverage on `src/`, zero mocks, and a
+clean tree after deterministic regeneration (a live byte-equality proof).
+Generated at {{GENERATION_TIMESTAMP}} (UTC) under Python {{PYTHON_VERSION}}.

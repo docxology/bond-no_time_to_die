@@ -1,53 +1,53 @@
 ---
 name: no-time-to-die
-description: Code-centric optimization research exemplar — gradient descent, convergence analysis, automated figures, dashboard, and publication-quality PDF.
-version: 0.1.0
-author: docxology
+description: PROJECT BOND film package (No Time to Die, 2021) — HERACLES mission. DNA-targeted bioweapon countermeasure, poison-garden toxicology, poison-delivery forensics; bond-api MissionProvider.
+version: 1.0.0
+author: PROJECT BOND
 license: MIT
-tags: [exemplar, code, optimization, thin-orchestrator]
+tags: [bond, film, pharmaco-forensics, bond-api, thin-orchestrator]
 ---
 
 # no-time-to-die
 
-Project-scoped skill for the in-repo exemplar at
-`projects/working/bond/no_time_to_die/`. Load this when working inside the project.
+Project-scoped skill for the BOND film package at
+`projects/working/bond/no_time_to_die/`. Load this when working inside the
+project.
 
 ## When to Use
 
-- Working inside the `no_time_to_die` exemplar — running scripts, editing source,
-  or regenerating outputs.
-- Forking this exemplar as the starting scaffold for a new research project.
-- Validating that the exemplar's contracts (thin-orchestrator, layer boundaries,
-  no-mocks testing) still hold after changes.
+- Working inside the HERACLES package — running mission phases, editing source,
+  or regenerating figures/manuscript variables.
+- Implementing or verifying the `bond_api.MissionProvider` adapter and the
+  frozen protocol integration.
 
 ## Quick Reference
 
 ```bash
-# From the repository root
-uv run pytest projects/working/bond/no_time_to_die/tests --cov=projects/working/bond/no_time_to_die/src --cov-fail-under=90
-uv run python scripts/pipeline/stage_02_analysis.py --project templates/no_time_to_die
-uv run python scripts/pipeline/stage_03_render.py --project templates/no_time_to_die
-uv run python scripts/pipeline/stage_04_validate.py --project templates/no_time_to_die
-uv run python scripts/pipeline/stage_05_copy.py --project templates/no_time_to_die
+cd projects/working/bond/no_time_to_die
+uv sync --extra dev
+uv run python scripts/run_mission.py all   # brief|recon|plan|execute|debrief|all
+uv run python scripts/z_generate_manuscript_variables.py
+uv run pytest tests/ --cov=src --cov-fail-under=90
+uv run ruff check src/ scripts/ tests/ && uv run ruff format --check src/ scripts/ tests/
+uv run mypy src/ scripts/
 ```
 
 ## Pitfalls
 
-- **Keep scripts thin.** Business logic belongs in `src/` or shared
-  `infrastructure/`, not in `scripts/`.
-- **No mocks.** All tests must use real data, real files, and real
-  computation.
-- **Outputs are disposable.** Never hand-edit `output/` — regenerate from
-  source and config.
-- **Keep tracked benchmarks deterministic.** Serialize reproducible inputs,
-  objective values, and checks; keep wall-clock timing as a runtime-only
-  diagnostic.
-- **Run from the repo root.** Commands assume the template monorepo root
-  as working directory unless the child `AGENTS.md` states otherwise.
+- **Keep scripts thin.** Business logic lives in `src/no_time_to_die/`, not in
+  `scripts/`.
+- **Domain purity.** The pure modules (`bioweapon_counter`, `toxicology`,
+  `delivery_forensics`, `demo`) must not import bond-api; only
+  `mission.py` adapts.
+- **No mocks.** Tests use real data + real computation; deterministic fakes
+  implement the REAL protocol.
+- **Live metrics.** Every manuscript number is a `{{TOKEN}}` from
+  `manuscript_variables.py`; never hardcode in prose.
+- **Outputs are disposable.** Regenerate `output/` (git-ignored); never hand-edit.
+- **Local-only.** No remote, never push.
 
 ## Cross-refs
 
 - Project contract: [`AGENTS.md`](../../../AGENTS.md)
 - README: [`README.md`](../../../README.md)
 - TODO: [`TODO.md`](../../../TODO.md)
-- Exemplar roster: [`projects/AGENTS.md`](../../../../../AGENTS.md)

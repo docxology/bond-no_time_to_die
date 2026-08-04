@@ -1,52 +1,50 @@
-#!/usr/bin/env python3
-"""Thin orchestrator: generate and inject manuscript variables.
+"""Hydrate manuscript tokens and render HERACLES figures (thin orchestrator).
 
-Reads experiment config and analysis outputs, writes
-``output/data/manuscript_variables.json``, and substitutes
-``{{TOKEN}}`` markers in manuscript sections into
-``output/manuscript/`` for PDF rendering.
+Writes ``output/data/manuscript_variables.json``, resolves the substituted
+manuscript tree to ``output/manuscript/``, and renders the three concept
+figures under ``output/figures/``. Strict by default: any unresolved
+``{{TOKEN}}`` fails the run.
 
-All computation lives in ``src/manuscript_variables``;
-all injection lives in
-``infrastructure.rendering.manuscript_injection``.
+Usage::
 
-Exit codes:
-    0   variables written and injected successfully
-    1   unexpected error
+    uv run python scripts/z_generate_manuscript_variables.py [--allow-draft]
 """
 
 from __future__ import annotations
 
-import argparse
+import json
 import sys
 from pathlib import Path
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_PROJECT_ROOT))
-sys.path.insert(0, str(_PROJECT_ROOT.parents[2]))
+_ROOT = Path(__file__).resolve().parent.parent
+_SRC = _ROOT / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
+
+from no_time_to_die.figures import plots
+from no_time_to_die.manuscript_variables import (
+    generate_variables,
+    resolve_manuscript_tree,
+)
 
 
-def main() -> int:
-    """CLI entry point."""
-    parser = argparse.ArgumentParser(description="Generate manuscript variables for no_time_to_die")
-    parser.add_argument(
-        "--allow-draft",
-        action="store_true",
-        help="Allow N/A fallbacks when analysis outputs are missing (non-pipeline draft mode)",
+def main(argv: list[str] | None = None) -> int:
+    """Hydrate tokens, resolve the manuscript, and render figures."""
+    argv = list(sys.argv[1:] if argv is None else argv)
+    strict = "--allow-draft" not in argv
+    variables = generate_variables(require_outputs=strict)
+
+    data_dir = _ROOT / "output" / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    (data_dir / "manuscript_variables.json").write_text(
+        json.dumps(variables, indent=2, sort_keys=True), encoding="utf-8"
     )
-    args = parser.parse_args()
 
-    from infrastructure.rendering.manuscript_injection import write_resolved_manuscript_tree
-    from src.manuscript_variables import generate_variables, save_variables
-
-    variables = generate_variables(
-        _PROJECT_ROOT,
-        require_analysis_outputs=not args.allow_draft,
-    )
-    out_path = _PROJECT_ROOT / "output" / "data" / "manuscript_variables.json"
-    save_variables(variables, out_path)
-    write_resolved_manuscript_tree(_PROJECT_ROOT, variables)
-    print(str(out_path))
+    out_dir, resolved = resolve_manuscript_tree(variables, strict=strict)
+    figures = plots.render_all_figures()
+    print(f"resolved {len(resolved)} manuscript sections under {out_dir}")
+    for figure in figures:
+        print(f"rendered figure: {figure}")
     return 0
 
 

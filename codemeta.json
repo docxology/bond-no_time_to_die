@@ -13,19 +13,19 @@
       "givenName": "Daniel Ari"
     }
   ],
-  "codeRepository": "https://github.com/docxology/no_time_to_die",
-  "dateModified": "2026-07-10",
-  "identifier": "10.5281/zenodo.20417136",
+  "dateModified": "2026-08-04",
   "keywords": [
-    "optimization algorithms",
-    "gradient descent",
-    "convergence analysis",
-    "numerical methods",
-    "mathematical programming",
-    "reproducible research",
-    "infrastructure automation"
+    "DNA-targeted bioweapon countermeasure",
+    "target specificity",
+    "poison-garden toxicology",
+    "dose-response",
+    "poison delivery forensics",
+    "trace detection",
+    "deterministic modelling"
   ],
   "license": "https://spdx.org/licenses/MIT",
-  "name": "Convergence Analysis of Gradient Descent Optimization",
-  "version": "2.5.2"
+  "name": "No Time to Die: HERACLES — Special-Agent Mission Software",
+  "version": "1.0.0",
+  "description": "Deterministic special-agent mission software modelling a DNA-targeted bioweapon countermeasure, poison-garden toxicology, and poison-delivery forensics (No Time to Die, 2021). PROJECT BOND local-only film package.",
+  "programmingLanguage": "Python"
 }

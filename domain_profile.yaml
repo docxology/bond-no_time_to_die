@@ -1,49 +1,34 @@
-domain: code_research
-display_name: Code Research Exemplar
-required_packages:
-  - numpy
-  - matplotlib
-  - pytest
-preferred_outputs:
-  - pdf
-  - html
-  - docx
-  - epub
-validation_gates:
-  - experiment_method_design
-  - artifact_manifest
-  - evidence_grounding
-  - render_validation
-  - publication_readiness
-figure_types:
-  - convergence_plot
-  - performance_benchmark
-  - sensitivity_analysis
-citation_policy: official_or_scholarly
-source_policy: "Prefer primary project outputs, official package documentation, and scholarly optimization references."
+# domain_profile.yaml — advisory agentic-research controls for HERACLES.
+# Validation inputs only; they do not execute autonomous agents.
+name: no_time_to_die
+codename: HERACLES
+film: "No Time to Die (2021)"
+
 review_gates:
-  - experiment_method_design
-  - render_validation
-  - publication_readiness
+  - pytest_cov_90
+  - ruff_check_format
+  - mypy_src_scripts
+  - lineage_zero
+  - zero_mocks
+
+source_policy:
+  numeric_claims: data/claim_ledger.yaml
+  procedural_math:
+    - "Pure deterministic functions in src/no_time_to_die; verified by tests"
+  synthetic_inputs:
+    - "Demo reference genome, guide set, and spectral fingerprints are synthetic calibrants documented in claim_ledger"
+
 artifact_expectations:
-  - output/data/manuscript_variables.json
-  - output/data/optimization_results.csv
-  - output/figures/convergence_plot.png
-  - output/reports/validation_report.json
-  - output/pdf/template_code_project_combined.pdf
+  figures:
+    - output/figures/delivery_kinetics.png
+    - output/figures/toxicology_dose_response.png
+    - output/figures/detection_confidence.png
+  data:
+    - output/data/manuscript_variables.json
+  manuscripts:
+    - output/manuscript/*.md
+
 benchmark_rubric:
-  name: code-research-readiness
-  dimensions:
-    - name: output_validity
-      weight: 1.0
-    - name: reproducibility_bundle
-      weight: 1.0
-    - name: artifact_manifest
-      weight: 1.0
-    - name: evidence_grounding
-      weight: 2.0
-    - name: render_success
-      weight: 1.0
-    - name: publication_readiness
-      weight: 1.0
-llm_prompt_guidance: "Use generated optimization artifacts and manuscript variables as the evidence source; do not invent numeric results."
+  coverage_floor_pct: 90.0
+  max_failures: 0
+  deterministic: true

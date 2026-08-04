@@ -1,83 +1,80 @@
-# Methodology {#sec:methodology}
+# Methodology
 
-This section describes the implementation methodology, explicitly detailing how the optimization algorithms are constructed, validated, and analyzed using the Generalized Research Template's `infrastructure` and `tests` ecosystems.
+This section specifies the mathematics of each concept module. All functions
+are pure, side-effect-free, and deterministic; the canonical demonstration
+inputs live in `src/no_time_to_die/demo.py` and are shared verbatim by the
+mission adapter and the manuscript variable generator so outcomes cannot
+drift.
 
-## Algorithm Implementation
+## DNA-targeted bioweapon countermeasure (`bioweapon_counter.py`)
 
-### Gradient Descent Algorithm
+**Specificity.** For a guide `g` and a reference genome `r`, every
+length-`|g|` window of `r` is scored by Hamming distance `d(g, w)`. A window
+at distance 0 is an on-target hit; a window at distance in `[1, k]` is an
+off-target hit representing a mis-address risk. Specificity is the share of
+hits that are on-target:
 
-The core algorithm implements the iterative procedure for unconstrained optimization. The [`optimizer` module](https://github.com/docxology/template/blob/main/projects/working/bond/no_time_to_die/src/optimizer.py) uses the standard-library `logging` logger for optional verbose diagnostics; the [analysis orchestrator](https://github.com/docxology/template/blob/main/projects/working/bond/no_time_to_die/scripts/optimization_analysis.py) uses `infrastructure.core.logging.utils.get_logger`. Tests run under the hermetic boundaries defined in the [test configuration](https://github.com/docxology/template/blob/main/projects/working/bond/no_time_to_die/tests/conftest.py).
+```
+specificity = on_target / (on_target + off_target)
+```
 
-**Algorithm — Gradient Descent (implemented in the [optimizer module](https://github.com/docxology/template/blob/main/projects/working/bond/no_time_to_die/src/optimizer.py#L87-L173))**
+`select_best_guide` chooses the candidate maximizing specificity, ties broken
+by first-in-order for determinism.
 
-> **Input:** Initial point $x_0$, step size $\alpha$, tolerance $\epsilon$, max iterations $N_{\max}$
->
-> 1. Initialize $k \leftarrow 0$
-> 2. **While** $k < N_{\max}$ **do:**
->    - Compute gradient $g_k = \nabla f(x_k)$
->    - **If** $\|g_k\|_2 < \epsilon$ **then return** $x_k$ *(converged)*
->    - Update: $x_{k+1} \leftarrow x_k - \alpha \cdot g_k$
->    - $k \leftarrow k + 1$
-> 3. **Return** $x_k$ *(max iterations reached)*
+**Delivery.** The one-compartment bateman equation models plasma concentration
+after an absorbed dose:
 
-## Infrastructure Integration
+```
+C(t) = dose * k_a/(k_a - k_e) * (exp(-k_e t) - exp(-k_a t))
+```
 
-The methodology explicitly bridges theoretical mathematics with production-grade validation through the `infrastructure.scientific` module.
+with `k_a` the absorption rate and `k_e` the elimination rate
+(`plasma_concentration`). The absorbed fraction at exposure time `t` is
+`fraction_delivered = 1 - exp(-k_a t)`.
 
-### Numerical Stability Analysis
+**Countermeasure efficacy.** `neutralization_probability` combines specificity,
+delivered fraction, and a saturating avidity term:
 
-Rather than writing ad-hoc validation code, the project imports `infrastructure.scientific.stability.check_numerical_stability`. This utility subjects the objective function to a barrage of extreme inputs (NaN, Inf, $\pm 10^{10}$) to calculate a formalized stability score. If this score degrades, the [analysis orchestrator](https://github.com/docxology/template/blob/main/scripts/pipeline/stage_02_analysis.py) execution deliberately aborts, ensuring the methodology cannot enter unrecoverable states.
+```
+P = specificity * delivered_fraction * avidity/(1 + avidity)
+```
 
-### Performance Benchmarking
+clamped to `[0, 1]`, so any near-zero component drives neutralization to zero.
 
-The analysis exercises [`infrastructure.scientific.benchmarking.benchmark_function`](https://github.com/docxology/template/blob/main/infrastructure/scientific/benchmarking.py) as a runtime diagnostic. Host-dependent timing and memory observations are logged but excluded from tracked evidence. The canonical report records fixed inputs and exact objective values, while the dimensional figure reports deterministic convergence iterations and the proxy $d \times \text{iterations}$; neither surface claims that one host run proves an asymptotic bound.
+## Poison-garden toxicology (`toxicology.py`)
 
-## Convergence Analysis
+Each flora toxin is a Hill dose–response hazard with LD50 and slope `n`
+(`PlantToxin`). The fraction of a population affected at dose `d` is
 
-For quadratic functions $f(x) = \frac{1}{2}x^T A x - b^T x$ where $A$ is positive definite, the convergence factor becomes [@bertsekas1999nonlinear]:
+```
+f(d) = d^n / (d^n + LD50^n)
+```
 
-\begin{equation}
-\label{eq:convergence_factor}
-\rho = \frac{|\lambda_{\max} - \alpha\lambda_{\min}|}{|\lambda_{\min} + \alpha\lambda_{\max}|}
-\end{equation}
+with analytic inverse `dose_for_fraction`. A mixture of agents combines under
+response addition — the system is unaffected only if every agent misses:
 
-Optimal convergence occurs when $\alpha = \frac{2}{\lambda_{\min} + \lambda_{\max}}$, yielding $\rho = \frac{\kappa - 1}{\kappa + 1}$.
+```
+F = 1 - prod_i (1 - f_i(d_i))
+```
 
-## Experimental Setup
+The `TOXIN_CATALOG` records `{{HERACLES_NUM_TOXINS}}` botanical toxins spanning
+LD50 from {{HERACLES_MIN_LD50}} to {{HERACLES_MEDIAN_LD50}} mg/kg (median), each
+with a published-approximation value and a botanical source; the forensic
+spectral library profiles `{{HERACLES_NUM_LIBRARY}}` poisons for identification.
 
-### Step Size Analysis
+## Poison-delivery forensics (`delivery_forensics.py`)
 
-Step sizes are not chosen ad hoc in the manuscript: they are read from `experiment.step_sizes` in `manuscript/config.yaml` and passed through `run_convergence_experiment()` in `src/analysis/` (entry: `scripts/optimization_analysis.py`). The active grid for this build is:
+A residue signal `S` with root-mean-square noise `N` yields
+`snr = S/N`. Detection confidence under a logistic model with limit of
+detection `lod` is
 
-{{CONFIG_STEP_SIZES_BULLETS}}
+```
+confidence = 1 / (1 + exp(-(snr - lod)))
+```
 
-Labels follow the same agency taxonomy used for plot colours (`_agency_category` in the analysis script): **conservative** (small $\alpha$, slow but stable on $H=I$), **near-optimal** (including $\alpha=1$ where the method reaches $x^\ast$ in one step for this quadratic), **aggressive** ($1 < \alpha < 2$, still linearly contracting in $|x-x^\ast|$ but oscillatory in sign), and **divergent** ($|1-\alpha| \geq 1$).
-
-### Zero-Mock Testing Methodology
-
-The most critical aspect of the project's methodology is its validation framework. The project is governed by a strict Zero-Mock testing policy, evaluated actively by executing `uv run pytest projects/working/bond/no_time_to_die/tests/` during the infrastructure build phase.
-
-1. **Project tests**: [`projects/working/bond/no_time_to_die/tests/test_optimizer.py`](../tests/test_optimizer.py) exercises `src/optimizer.py` (typical, edge, boundary, and pathological inputs including NaN/Inf and zero gradients) and, when infrastructure imports succeed, call into `optimization_analysis.py` helpers—without mocks. Suite size: [`docs/_generated/COUNTS.md`](../../../../docs/_generated/COUNTS.md).
-2. **Infrastructure validation**: The repository-level `tests/infra_tests/` suite validates shared template modules (e.g. pipeline and discovery helpers) independently of this project’s manuscript.
-3. **Coverage Gates**: The [GitHub Actions CI workflow](https://github.com/docxology/template/blob/main/.github/workflows/ci.yml) enforces a mandatory ≥90% statement coverage gate on `projects/working/bond/no_time_to_die/src/` prior to treating the project as build-green.
-
-### Stopping rule and reporting
-
-`gradient_descent()` terminates when $\|\nabla f(x_k)\|$ falls below `experiment.tolerance`, when $k$ reaches `experiment.max_iterations`, or when an objective, gradient, or update becomes non-finite. The boolean `converged` plus `termination_reason` in exported CSV rows distinguish these outcomes. A non-finite candidate is rejected before it enters `objective_history`, preserving the last finite state for reproducible reporting. Downstream, `scripts/z_generate_manuscript_variables.py` aggregates the CSV into `RESULT_*` placeholders so tables and prose cannot drift from the last analysis run.
-
-### Figure generation contract
-
-Each figure in `03_results.md` maps to a generator in `src/figures/` (`generate_convergence_plot`, `generate_step_size_sensitivity_plot`, `generate_convergence_rate_plot`, `generate_complexity_visualization`, `generate_stability_visualization`, `generate_benchmark_visualization`), orchestrated by `src/analysis/` / `scripts/optimization_analysis.py`. Captions in the markdown intentionally name the function and the key parameters (tolerance lines, grids, dimensions) so reviewers can navigate from PDF to code without inferring hidden defaults.
-
-The same generator writes explicit `metadata.alt_text` for every registered
-figure. The alt text states what the visual encodes and preserves the boundary
-between deterministic observations and host-dependent diagnostics. Run the
-opt-in publication migration gate with
-`--require-figure-accessibility` to verify that every referenced figure has
-this metadata before promotion.
-
-## Analysis Pipeline & LaTeX Integration
-
-The automated analysis script leverages [`infrastructure.core.progress`](https://github.com/docxology/template/blob/main/infrastructure/core/progress.py) (`ProgressBar`, `SubStageProgress`) to orchestrate experiments, collect convergence trajectories, and generate publication-quality visualizations seamlessly.
-
-The research template supports advanced LaTeX customization through the `preamble.md` configuration. This is ingested directly by `infrastructure.rendering.latex_utils.py` and `pdf_renderer.py`, automatically linking compiled PGF plots and BibTeX citations. This automated approach ensures an unbreakable chain of custody from raw algorithmic execution to the final rendered manuscript.
+Concentration is back-computed from a linear calibration `S = m·C + b`
+(sub-LOD signals clamp to zero), the transferred dose is
+`concentration · volume · transfer_fraction` (`recovered_dose`), and an unknown
+residue spectrum is identified by cosine similarity against the reference
+library (`match_unknown`). The demonstration operates at a
+limit-of-detection SNR of `{{HERACLES_LOD_SNR}}`.

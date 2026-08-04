@@ -1,6 +1,6 @@
 # no-time-to-die skill — AGENTS.md
 
-Project-scoped skill bundle for the `no_time_to_die` exemplar.
+Project-scoped skill bundle for the `no_time_to_die` (HERACLES) film package.
 
 | File | Purpose |
 | --- | --- |
@@ -12,9 +12,9 @@ Project-scoped skill bundle for the `no_time_to_die` exemplar.
 
 Agents that need to:
 
-- Drive the in-repo exemplar end-to-end.
-- Fork this exemplar as a starting scaffold.
-- Verify layer boundaries and thin-orchestrator contracts.
+- Drive the HERACLES mission phases (`brief/recon/plan/execute/debrief`).
+- Implement or verify the `bond_api.MissionProvider` adapter.
+- Regenerate figures / manuscript variables deterministically.
 
 ## Cross-refs
 

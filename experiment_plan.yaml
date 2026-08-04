@@ -1,25 +1,32 @@
+# experiment_plan.yaml — HERACLES mission experiment plan.
+mission: no_time_to_die
+codename: HERACLES
+
 conditions:
-  - name: conservative_step
-    role: reference
-    description: "Stable gradient-descent step below the spectral bound."
-  - name: near_optimal_step
-    role: proposed
-    description: "Template-recommended step near the stable convergence region."
-  - name: aggressive_step
-    role: variant
-    description: "Stress condition near or above the stability boundary."
-metrics:
-  primary:
-    name: objective_value
-    direction: minimize
-protocol: "Run the deterministic quadratic optimization sweep with identical initialization, seeds, tolerance, and iteration cap across all declared step-size conditions."
-expected_figures:
-  - fig:convergence_plot
-  - fig:performance_benchmark
-  - fig:step_size_sensitivity
-expected_tables:
-  - tbl:optimization_results
-baselines:
-  - conservative_step
-ablations:
-  - aggressive_step
+  - name: countermeasure_specificity
+    objective: select most specific DNA guide and bound neutralization probability
+    primary_metric: specificity (share of hits on-target)
+    inputs: demo.py reference + guide set, max_mismatches=2, avidity=3.0
+  - name: toxicology_catalog
+    objective: profile poison-garden flora as Hill hazards
+    primary_metric: median LD50 over catalog (mg/kg)
+    inputs: TOXIN_CATALOG (7 toxins)
+  - name: vesper_trace_detection
+    objective: detect and identify a delivered poison residue
+    primary_metric: recovered dose from calibration + top spectral match
+    inputs: signal=9.0, noise=1.0, LOD SNR=3.0, calibration slope=2.0
+
+figure_expectations:
+  - toxicology_dose_response.png
+  - delivery_kinetics.png
+  - detection_confidence.png
+
+table_expectations:
+  - Three conditions in manuscript/05_experimental_setup.md
+
+baseline:
+  - "Deterministic seed = 11, canonical demo.py, no random draws"
+
+ablation:
+  - "Specificity=0 (no on-target) drives neutralization probability to 0"
+  - "Sub-LOD signal clamps recovered concentration to 0 (no false positive)"

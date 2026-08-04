@@ -1,13 +1,10 @@
-# no_time_to_die/data
+# data/
 
-Project-maintained **inputs** for the code exemplar (not pipeline outputs).
+Versioned project inputs for the `no_time_to_die` (HERACLES) package.
 
-## Quick reference
+- `claim_ledger.yaml` — sourced numeric claims (LD50 approximations, demo
+  constants, synthetic calibrants) for evidence-registry validation. See
+  `AGENTS.md` in this directory for the schema and edit protocol.
 
-| File | Role |
-| --- | --- |
-| `claim_ledger.yaml` | Source-backed numeric and artifact claims for evidence validation |
-
-Generated analysis outputs belong under `output/` during pipeline runs, not here.
-
-Schema and edit protocol: [`AGENTS.md`](AGENTS.md).
+Generated artifacts (figures, resolved manuscript, manuscript variables) are
+written under `output/`, which is git-ignored.

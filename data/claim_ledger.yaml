@@ -1,57 +1,46 @@
+# claim_ledger.yaml — sourced numeric claims for HERACLES.
+# Every numeric constant used in the demonstration is registered here so the
+# evidence-registry validation can trace it to a source. LD50 figures are
+# standard published approximations for mammalian/human exposure (ranges span
+# published references); the forensic spectra and demo genome are synthetic
+# calibrants/inputs, explicitly not measured data.
+version: 1.0.0
+
 claims:
-  - claim_id: figure-export-dpi
-    kind: number
-    value: 300
-    source: projects/working/bond/no_time_to_die/src/viz_config.py plotting defaults (dpi)
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/convergence_plot.png
-  - claim_id: step-size-sensitivity-cap
-    kind: number
-    value: 500
-    source: projects/working/bond/no_time_to_die/src/sweeps.py sensitivity_sweep max_iter cap
-    source_tier: generated_metric
-    freshness: active
-    artifact_path: output/figures/step_size_sensitivity.png
-  - claim_id: stability-log-lower
-    kind: number
-    value: -6
-    source: projects/working/bond/no_time_to_die/src/figures/scientific_stability.py stability visualization caption
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/stability_analysis.png
-  - claim_id: solution-relative-error-exponent
-    kind: number
-    value: -4
-    source: projects/working/bond/no_time_to_die/manuscript/03_results.md stated precision threshold
-    source_tier: manuscript_claim
-    freshness: active
-    artifact_path: manuscript/03_results.md
-  - claim_id: stability-log-upper
-    kind: number
-    value: -9
-    source: projects/working/bond/no_time_to_die/src/figures/scientific_stability.py stability visualization caption
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/stability_analysis.png
-  - claim_id: benchmark-tolerance-exponent
-    kind: number
-    value: -10
-    source: projects/working/bond/no_time_to_die/scripts/optimization_analysis.py dimensional benchmark tolerance
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/performance_benchmark.png
-  - claim_id: benchmark-min-iterations
-    kind: number
-    value: 219
-    source: projects/working/bond/no_time_to_die/manuscript/03_results.md benchmark caption
-    source_tier: manuscript_claim
-    freshness: active
-    artifact_path: output/figures/performance_benchmark.png
-  - claim_id: benchmark-max-iterations
-    kind: number
-    value: 238
-    source: projects/working/bond/no_time_to_die/manuscript/03_results.md benchmark caption
-    source_tier: manuscript_claim
-    freshness: active
-    artifact_path: output/figures/performance_benchmark.png
+  - id: ld50_ricin
+    value_mg_per_kg: 1.0
+    source: "Published approximation, ricin (Ricinus communis) oral/mammalian toxicity"
+    note: "Standard cited order-of-magnitude; synthetic-domain calibrant for Hill model"
+  - id: ld50_atropine
+    value_mg_per_kg: 10.0
+    source: "Published approximation, atropine (Atropa belladonna) toxicity"
+  - id: ld50_coniine
+    value_mg_per_kg: 6.0
+    source: "Published approximation, coniine (Conium maculatum) toxicity"
+  - id: ld50_aconitine
+    value_mg_per_kg: 1.5
+    source: "Published approximation, aconitine (Aconitum napellus) toxicity"
+  - id: ld50_strychnine
+    value_mg_per_kg: 2.0
+    source: "Published approximation, strychnine (Strychnos nux-vomica) toxicity"
+  - id: ld50_nicotine
+    value_mg_per_kg: 0.8
+    source: "Published approximation, nicotine (Nicotiana tabacum) toxicity"
+  - id: ld50_cyanide
+    value_mg_per_kg: 1.5
+    source: "Published approximation, cyanogenic prussic acid toxicity"
+  - id: demo_seed
+    value: 11
+    source: "Fixed deterministic seed (src/no_time_to_die/demo.py)"
+    synthetic: true
+  - id: lod_snr
+    value: 3.0
+    source: "Conventional limit-of-detection signal-to-noise threshold"
+  - id: forensic_spectra
+    value: "synthetic non-negative 5-bin fingerprints"
+    source: "Synthetic calibrants in src/no_time_to_die/delivery_forensics.py"
+    synthetic: true
+  - id: demo_reference_genome
+    value: "periodic 64-nt ACGT string"
+    source: "Synthetic deterministic input (src/no_time_to_die/demo.py)"
+    synthetic: true

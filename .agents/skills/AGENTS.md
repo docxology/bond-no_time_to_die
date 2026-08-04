@@ -5,14 +5,14 @@ One folder per skill. Each ships `AGENTS.md`, `README.md`, `SKILL.md`.
 
 | Skill | Purpose |
 | --- | --- |
-| [`no-time-to-die/`](no-time-to-die/AGENTS.md) | Drive this exemplar end-to-end. |
+| [`no-time-to-die/`](no-time-to-die/AGENTS.md) | Drive this HERACLES film package end-to-end. |
 
 ## Skill contract
 
 Every skill folder under `.agents/skills/<name>/` must ship:
 
-- `SKILL.md` — YAML frontmatter (`name`, `description`, `version`,
-  `tags`, …) + a body markdown describing **when to use**, **quick
-  reference**, **pitfalls**, **cross-refs**.
+- `SKILL.md` — YAML frontmatter (`name`, `description`, `version`, `tags`, …)
+  + a body markdown describing **when to use**, **quick reference**,
+  **pitfalls**, **cross-refs**.
 - `AGENTS.md` — short technical reference for the skill folder.
 - `README.md` — purpose + pointer.

@@ -1,19 +1,18 @@
-"""Pytest configuration for no_time_to_die tests."""
+"""Pytest configuration for the no_time_to_die (HERACLES) package."""
+
+from __future__ import annotations
 
 import os
 import sys
 
-# Force headless backend for matplotlib in tests
+# Headless matplotlib backend — figures must never open a window.
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-# Add src/ AND the repo root to path so the documented per-project pytest command
-# works from a clean environment. The project pyproject's `pythonpath` is
-# project-relative and omits the repo root, so without this the suite cannot import
-# `infrastructure` (tests collect-error). The project lives at
-# projects/templates/<name>/, so the repo root is three levels above ROOT.
+# This package uses a src-layout; make both the package src/ and the repo root
+# importable so `uv run pytest tests/` works from a clean environment. bond-api
+# is installed as a local path dependency via `uv sync` and needs no path hack.
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SRC = os.path.join(ROOT, "src")
-REPO_ROOT = os.path.abspath(os.path.join(ROOT, "..", "..", ".."))
-for _path in (REPO_ROOT, SRC):
+for _path in (SRC, ROOT):
     if _path not in sys.path:
         sys.path.insert(0, _path)

@@ -1,5 +1,33 @@
-# Code-centric exemplar: optional monorepo adapters only.
-allow_infrastructure_imports:
-  - src/analysis/_infra.py
-  - src/_runtime.py
-  - src/benchmark_support.py
+# Layer contract — no_time_to_die (HERACLES)
+# Project-local layer contract for this standalone src-layout film package.
+# No infrastructure.* imports exist anywhere in this tree; the contract below
+# documents the boundary between pure domain, adapters, and thin scripts.
+surfaces:
+  - name: pure_domain
+    files:
+      - src/no_time_to_die/bioweapon_counter.py
+      - src/no_time_to_die/toxicology.py
+      - src/no_time_to_die/delivery_forensics.py
+      - src/no_time_to_die/demo.py
+    rule: "No bond-api, no infra, no logic-hiding I/O"
+  - name: figures
+    files:
+      - src/no_time_to_die/figures/plots.py
+    rule: "Deterministic matplotlib rendering to output/figures/ only"
+  - name: protocol_adapter
+    files:
+      - src/no_time_to_die/mission.py
+    rule: "Imports bond-api protocol + registry; implements MissionProvider"
+  - name: manuscript
+    files:
+      - src/no_time_to_die/manuscript_variables.py
+    rule: "Reads manuscript/config.yaml + demo.py; writes output/"
+  - name: scripts
+    files:
+      - scripts/*
+    rule: "Thin orchestrators: sys.path bootstrap + phase dispatch only"
+
+enforced_by:
+  - "Zero-mock tests, >= 90% line+branch coverage on src/ (pyproject fail_under)"
+  - "bond_api.runtime_checkable MissionProvider protocol"
+  - "ruff + mypy on src/ and scripts/"
