@@ -72,8 +72,19 @@ def estimate_concentration(
 ) -> float:
     """Back-compute concentration from a linear calibration model ``S = m*C + b``.
 
-    Returns ``(signal - b) / m``; sub-LOD signals (below the intercept) clamp to
-    ``0.0``.
+    Returns ``(signal - b) / m``, clamped to ``0.0`` when ``signal`` falls
+    below the calibration **intercept** ``b`` (where the inverted line would
+    return a physically meaningless negative concentration).
+
+    This clamp is *not* a limit-of-detection test, and this function has no
+    knowledge of the LOD. Earlier revisions described it as one ("sub-LOD
+    signals clamp to zero"), which was wrong: with the demonstration's
+    ``b = 0.5`` and ``DEFAULT_LOD_SNR = 3.0``, a signal of ``1.0`` sits well
+    below the limit of detection yet still returns a positive concentration of
+    ``0.25``. Deciding whether a signal is real is
+    :func:`detection_confidence`'s job; this function only inverts the
+    calibration line. ``tests/test_delivery_forensics.py`` pins that exact
+    below-LOD-yet-positive case so the two cannot be conflated again.
 
     Raises:
         ValueError: if ``calibration_slope <= 0``.

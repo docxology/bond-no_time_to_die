@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from no_time_to_die import demo
 from no_time_to_die.manuscript_variables import (
     REQUIRED_DEMO_KEYS,
+    REQUIRED_TOP_LEVEL_KEYS,
     check_demo_completeness,
     generate_variables,
     load_manuscript_config,
@@ -61,7 +63,11 @@ class TestGenerateVariables:
             "HERACLES_MOE",
             "HERACLES_EXPOSURE_VERDICT",
             "PYTHON_VERSION",
-            "GENERATION_TIMESTAMP",
+            "HERACLES_CM_BEST_GUIDE",
+            "HERACLES_DESIGN_BEST_GUIDE",
+            "HERACLES_PLANTED_ON_TARGET",
+            "HERACLES_PLANTED_NEAR_MISS",
+            "HERACLES_FOR_INTERCEPT",
         ):
             assert key in variables
 
@@ -88,6 +94,32 @@ class TestProseCrossReference:
             tokens = set(_TOKEN_RE.findall(text))
             missing = tokens - generated
             assert not missing, f"{section.name} references undefined tokens {sorted(missing)}"
+
+    def test_each_section_cites_its_own_guide_selector(self) -> None:
+        """The two selectors are different models and may disagree.
+
+        ``select_best_guide`` maximizes specificity; ``design_report`` maximizes
+        an efficiency/off-target composite. A single ``HERACLES_BEST_GUIDE``
+        token hydrated from the design report was quoted in both the
+        countermeasure and the guide-design sections, so the countermeasure
+        prose would silently attribute the design model's answer to
+        ``select_best_guide`` the moment the two diverged.
+        """
+        text = (_MANUSCRIPT / "03_results.md").read_text(encoding="utf-8")
+        _, _, rest = text.partition("## Countermeasure demonstration")
+        countermeasure_body, _, rest = rest.partition("## Guide-design ranking")
+        design_body, _, _ = rest.partition("## Poison-garden catalog")
+        assert "{{HERACLES_CM_BEST_GUIDE}}" in countermeasure_body
+        assert "{{HERACLES_DESIGN_BEST_GUIDE}}" not in countermeasure_body
+        assert "{{HERACLES_DESIGN_BEST_GUIDE}}" in design_body
+        assert "{{HERACLES_CM_BEST_GUIDE}}" not in design_body
+
+    def test_the_ambiguous_guide_token_is_not_used_in_prose(self) -> None:
+        for section in sorted(_MANUSCRIPT.glob("[0-9][0-9]_*.md")):
+            body = section.read_text(encoding="utf-8")
+            assert "{{HERACLES_BEST_GUIDE}}" not in body, (
+                f"{section.name} uses the ambiguous token; cite CM_ or DESIGN_ explicitly"
+            )
 
     def test_guide_tokens_appear_nowhere_unresolved(self) -> None:
         # The strict resolver must leave no literal {{TOKEN}} in rendered prose.
@@ -187,6 +219,93 @@ class TestDemoCompletenessGate:
                 del results[section][key]  # type: ignore[literal-required]
                 with pytest.raises(ValueError, match=re.escape(f"{section}.{key}")):
                     check_demo_completeness(results)
+
+    def test_every_top_level_key_is_individually_load_bearing(self) -> None:
+        assert REQUIRED_TOP_LEVEL_KEYS, "an empty declaration makes this loop vacuous"
+        for key in REQUIRED_TOP_LEVEL_KEYS:
+            results = demo.run_demo()
+            del results[key]  # type: ignore[misc]
+            with pytest.raises(ValueError, match=re.escape(key)):
+                check_demo_completeness(results)
+
+    def test_a_missing_section_is_reported_not_crashed_on(self) -> None:
+        results = demo.run_demo()
+        del results["forensics"]  # type: ignore[misc]
+        with pytest.raises(ValueError, match=r"forensics\.\*"):
+            check_demo_completeness(results)
+
+    def test_no_demo_result_key_can_go_missing_unnoticed(self) -> None:
+        """The completeness claim itself, checked exhaustively.
+
+        ``06_reproducibility.md`` says the gate "fails if the demo result is
+        missing any key the tokens read". The declared-key positive control
+        above only proves each *declared* key is load-bearing — it cannot see a
+        key the tokens read but nobody declared, and there was one:
+        ``garden_risk_combined``, a top-level float that the section-keyed scan
+        was structurally blind to. Deleting it passed the gate and then raised a
+        bare ``KeyError`` from inside ``generate_variables``.
+
+        So: delete every key of a real demo result in turn, at both levels, and
+        require each deletion to land in exactly one of two buckets.
+
+        * **Guarded** — the gate raises, naming the key.
+        * **Irrelevant** — with the gate off, every rendered token is
+          byte-identical to the baseline, i.e. no token read it.
+
+        Anything else is a hole. That includes the loud case (a ``KeyError``
+        escaping the gate) *and* the quiet one (a token silently degrading to
+        its ``0.0``/``"n/a"`` fallback), which is the failure mode that actually
+        matters: a manuscript that renders a plausible zero is worse than one
+        that fails to render.
+        """
+        baseline = generate_variables(results=demo.run_demo(), require_outputs=False)
+        template = demo.run_demo()
+        paths: list[tuple[str, ...]] = [(key,) for key in template]
+        paths += [
+            (section, key)
+            for section, bucket in template.items()
+            if isinstance(bucket, dict)
+            for key in bucket
+        ]
+        assert len(paths) > 30, f"only {len(paths)} key paths found; the sweep is too thin"
+
+        unguarded: list[str] = []
+        for path in paths:
+            label = ".".join(path)
+            results = demo.run_demo()
+            target: Any = results
+            for step in path[:-1]:
+                target = target[step]
+            del target[path[-1]]
+            try:
+                generate_variables(results=results, require_outputs=True)
+            except ValueError as exc:
+                assert "manuscript-critical keys" in str(exc)
+                continue  # guarded, and named
+            except Exception as exc:  # noqa: BLE001 — the point is to catch anything else
+                unguarded.append(f"{label} -> {type(exc).__name__} escaped the gate")
+                continue
+            degraded = generate_variables(results=results, require_outputs=False)
+            drifted = sorted(key for key in baseline if baseline[key] != degraded.get(key))
+            if drifted:
+                unguarded.append(f"{label} -> silently changed {drifted}")
+        assert unguarded == [], f"keys read by tokens but not guarded by the gate: {unguarded}"
+
+    def test_the_sweep_detects_an_unguarded_key(self) -> None:
+        """Positive control on the sweep: an unguarded key must be visible.
+
+        ``garden_risk_combined`` is guarded now, so simulate the pre-fix state
+        by checking that removing it from a result and calling the *generator*
+        without the gate produces the fallback rather than a crash — and that
+        the gate, when on, names it.
+        """
+        results = demo.run_demo()
+        del results["garden_risk_combined"]  # type: ignore[misc]
+        with pytest.raises(ValueError, match="garden_risk_combined"):
+            generate_variables(results=results, require_outputs=True)
+        # Gate off: the token degrades to the documented zero fallback.
+        variables = generate_variables(results=results, require_outputs=False)
+        assert variables["HERACLES_GARDEN_RISK_PCT"] == "0"
 
     def test_generate_variables_propagates_the_gate(self) -> None:
         results = demo.run_demo()

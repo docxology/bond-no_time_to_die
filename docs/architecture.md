@@ -34,8 +34,21 @@ environment without bond-api or the pipeline installed.
 | `exposure_assessment.py` | `absorbed_dose` (pathway intake), `cumulative_exposure` (body burden under first-order elimination), `margin_of_exposure`, `risk_quotient`, and the composed `exposure_scenario_report` verdict. |
 | `delivery_forensics.py` | `signal_to_noise`, logistic `detection_confidence` vs the LOD, `estimate_concentration` from a linear calibration, `recovered_dose`, `cosine_similarity` / `match_unknown` against the 5-entry `SPECTRUM_LIBRARY`, and the composed `vesper_trace_report`. |
 
-`bioweapon_counter` is the only module the others depend on
-(`targeting_design` imports its validators); everything else is a sibling.
+The intra-package dependency graph among the domain modules is exactly two
+edges, and it is acyclic:
+
+```
+targeting_design    → bioweapon_counter   (hamming_distance, validate_sequence)
+antidote_screening  → toxicology          (PlantToxin, fraction_affected)
+```
+
+`bioweapon_counter`, `toxicology`, `exposure_assessment`, and
+`delivery_forensics` import nothing from this package. A previous revision of
+this section claimed "`bioweapon_counter` is the only module the others depend
+on … everything else is a sibling", which the `antidote_screening → toxicology`
+edge has always contradicted. `tests/test_architecture.py` now derives this
+graph with an AST scan and fails on any edge that is not listed above — added,
+removed, or reversed — so the sentence cannot drift from the imports again.
 
 ## How the pieces compose
 

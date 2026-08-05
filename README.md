@@ -88,10 +88,16 @@ The `MissionProvider` phases return frozen `bond_api.protocol` dataclasses:
 Local-only working tree (never push, no remote). ≥90% line+branch coverage on
 `src/` enforced by `pyproject.toml` (the gate is authoritative — this README
 deliberately does not quote a coverage figure that would go stale); zero mocks;
-deterministic computation (fixed seed and inputs in
-`src/no_time_to_die/demo.py`, no wall-clock in persisted artifacts); thin
-scripts; full type hints; `ruff` + `mypy` clean. `output/` is git-ignored
+thin scripts; full type hints; `ruff` + `mypy` clean. `output/` is git-ignored
 (regenerable).
+
+Determinism is a structural property, not a promise: no module under `src/`
+imports a clock or a random-number generator, the package makes exactly one
+environment read (`platform.python_version()`, the single host-dependent
+token), and `tests/test_determinism.py` fails the build on a violation of
+either — with positive controls proving those scans report a reintroduced
+`datetime` or `random` import rather than passing quietly. Two runs on one
+interpreter render byte-identical artifacts.
 
 ## See also
 
@@ -103,7 +109,12 @@ scripts; full type hints; `ruff` + `mypy` clean. `output/` is git-ignored
   mapping), [`testing_philosophy.md`](docs/testing_philosophy.md) (zero-mock
   doctrine).
 - [`manuscript/`](manuscript/) — prose + config.
-- [`data/claim_ledger.yaml`](data/claim_ledger.yaml) — every sourced numeric
-  constant, marked measured-approximation vs synthetic.
+- [`data/claim_ledger.yaml`](data/claim_ledger.yaml) — every numeric constant
+  the demonstration consumes, each marked `synthetic: true` (invented here) or
+  `synthetic: false` (a commonly-cited order-of-magnitude figure carried without
+  a specific citation). Nothing in the package is a measurement. The registry is
+  bound to the code by `tests/test_claim_ledger.py`, which derives the expected
+  constant set from the modules themselves and fails on an unregistered
+  constant, an orphaned entry, or a value edited on one side only.
 - `bond-api` / `bond-orchestrator` / `bond-utilities` — the BOND suite Layer
   1/3/0 building blocks this film binds to.

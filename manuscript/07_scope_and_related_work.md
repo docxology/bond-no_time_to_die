@@ -5,13 +5,44 @@
 This package models the *computational* skeleton of the HERACLES narrative arc
 in *No Time to Die* (2021). It does **not** claim biological fidelity to a
 real bioweapon, a real pharmacology database, or a real analytical instrument.
-The DNA reference and guide set are synthetic fixed inputs chosen to exercise
-the algorithms deterministically; the poison LD50 values are standard
-published approximations recorded for transparency in
-`data/claim_ledger.yaml`; the forensic "spectral fingerprints" are synthetic
-non-negative calibrants. The value is in the *method* — reproducible,
-task-appropriate modelling with auditable provenance — not in the specific
-constants.
+**Nothing in this package is a measurement.** The value is in the *method* —
+reproducible, task-appropriate modelling with auditable provenance — not in the
+specific constants.
+
+Every constant is registered in `data/claim_ledger.yaml` under one of exactly
+two provenance classes, and the split matters:
+
+- **Invented for this demonstration** (`synthetic: true`): the DNA reference and
+  guide set, all seven Hill slopes, the forensic spectral fingerprints and the
+  unknown spectrum, the guide-design model parameters, every demonstration
+  scenario parameter, and **all five antidote `Ki` values**.
+- **Commonly-cited order-of-magnitude figures for real substances**
+  (`synthetic: false`), recorded without a specific citation and used as
+  plausible calibrants rather than as data: the seven LD50 values and the
+  conventional limit-of-detection SNR of 3.
+
+### Withdrawn claim: the antidote inhibition constants
+
+This is worth naming rather than burying in a table. Through 2026-08-04 the
+ledger labelled all five antidote `Ki` values "Published approximation, *drug*
+Ki" and left them unflagged, placing them on the measured side of the ledger's
+own distinction, and the module docstring called them
+"published-approximation inhibition constants". That was false. No publication
+reports these numbers, and two independent facts make it impossible that any
+could:
+
+- Naloxone and flumazenil bind their receptors at nanomolar affinity. The
+  recorded 0.4 and 1.0 mg/L are not those quantities in any unit system.
+- Pralidoxime reactivates phosphorylated acetylcholinesterase, acetylcysteine is
+  a glutathione precursor, and vitamin K is a cofactor in an enzymatic cycle.
+  None is a competitive receptor antagonist, so none has a `Ki` of the kind the
+  Cheng–Prusoff relation consumes. The model is applied to them uniformly
+  regardless — a property of this demonstration, not of the pharmacology.
+
+The values are now marked `synthetic: true` with honest source labels, and
+`tests/test_claim_ledger.py` fails if any is re-flagged as measured. The
+antidote screen therefore demonstrates that the ranking arithmetic is correct,
+and demonstrates nothing about clinical antidote choice.
 
 Boundaries kept deliberately out of scope:
 
@@ -19,6 +50,9 @@ Boundaries kept deliberately out of scope:
   one-compartment delivery model.
 - No instrument noise model beyond additive RMS noise.
 - No claims of real-world forensic admissibility.
+- No claim that any model would behave this way on a real genome, patient, or
+  instrument. The reference genome is a *constructed* input with a planted,
+  documented structure; the results measure recovery of that planted structure.
 
 ## Related work
 

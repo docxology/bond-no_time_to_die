@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from no_time_to_die import demo
 from no_time_to_die.delivery_forensics import (
     DEFAULT_LOD_SNR,
     cosine_similarity,
@@ -52,8 +53,31 @@ class TestEstimateConcentration:
     def test_value(self) -> None:
         assert estimate_concentration(9.0, 2.0, 1.0) == pytest.approx(4.0)
 
-    def test_sub_lod_clamps_to_zero(self) -> None:
+    def test_signal_below_the_intercept_clamps_to_zero(self) -> None:
+        """The clamp is at the calibration intercept, not the LOD."""
         assert estimate_concentration(0.5, 2.0, 1.0) == 0.0
+        # Exactly at the intercept the inverted line is 0 and does not clamp.
+        assert estimate_concentration(1.0, 2.0, 1.0) == 0.0
+
+    def test_below_lod_but_above_intercept_still_returns_a_concentration(self) -> None:
+        """Pin the behaviour the methodology used to misdescribe.
+
+        Both the manuscript and this function's docstring said "sub-LOD signals
+        clamp to zero". They do not: the clamp compares the signal against the
+        calibration intercept, and ``estimate_concentration`` never sees the
+        LOD. With the demonstration's intercept (0.5) and LOD SNR (3.0), a
+        signal of 1.0 is far below the limit of detection yet yields a positive
+        concentration. If anyone ever makes the clamp LOD-aware, this fails and
+        the prose must be revisited with it.
+        """
+        signal = 1.0
+        slope = demo.FORENSIC_SCENARIO["calibration_slope"]
+        intercept = demo.FORENSIC_SCENARIO["calibration_intercept"]
+        assert signal < DEFAULT_LOD_SNR, "premise: the signal is below the limit of detection"
+        assert signal > intercept, "premise: the signal is above the calibration intercept"
+        assert estimate_concentration(signal, slope, intercept) == pytest.approx(0.25)
+        # ... and the detector, which does know the LOD, calls it unlikely.
+        assert detection_confidence(signal, DEFAULT_LOD_SNR) < 0.5
 
     def test_nonpositive_slope_raises(self) -> None:
         with pytest.raises(ValueError):

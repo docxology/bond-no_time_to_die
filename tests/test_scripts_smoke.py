@@ -63,3 +63,33 @@ class TestManuscriptGeneratorScript:
         assert "rendered figure" in proc.stdout
         json_path = PROJECT_ROOT / "output" / "data" / "manuscript_variables.json"
         assert json_path.is_file()
+
+    def test_strict_mode_resolves_the_whole_manuscript(self) -> None:
+        """The default (strict) path must succeed, not just ``--allow-draft``."""
+        proc = _run(str(SCRIPTS / "z_generate_manuscript_variables.py"))
+        assert proc.returncode == 0, proc.stderr
+        assert "resolved" in proc.stdout
+
+    def test_two_full_runs_write_identical_persisted_artifacts(self) -> None:
+        """End-to-end byte-equality, through the real script and the real tree.
+
+        This is the "clean tree after deterministic regeneration" the
+        reproducibility section advertises. It was false: the persisted JSON and
+        the rendered ``06_reproducibility.md`` both carried a wall-clock stamp,
+        so consecutive runs differed. Note that a second-resolution timestamp
+        only *sometimes* differs between two fast runs — which is why the
+        structural import gate in ``tests/test_determinism.py``, not this test,
+        is the primary defence. This one confirms the end-to-end result.
+        """
+        data = PROJECT_ROOT / "output" / "data" / "manuscript_variables.json"
+        rendered = PROJECT_ROOT / "output" / "manuscript"
+
+        assert _run(str(SCRIPTS / "z_generate_manuscript_variables.py")).returncode == 0
+        first_json = data.read_bytes()
+        first_tree = {path.name: path.read_bytes() for path in sorted(rendered.glob("*.md"))}
+        assert first_tree, "nothing was rendered; the comparison would be vacuous"
+
+        assert _run(str(SCRIPTS / "z_generate_manuscript_variables.py")).returncode == 0
+        assert data.read_bytes() == first_json
+        second_tree = {path.name: path.read_bytes() for path in sorted(rendered.glob("*.md"))}
+        assert second_tree == first_tree

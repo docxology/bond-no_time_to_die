@@ -43,6 +43,18 @@ uv run mypy src/ scripts/
   implement the REAL protocol.
 - **Live metrics.** Every manuscript number is a `{{TOKEN}}` from
   `manuscript_variables.py`; never hardcode in prose.
+- **No clock, no RNG.** Nothing under `src/` may import `datetime`, `time`,
+  `random`, `secrets`, `uuid`, `socket`, or `tempfile`;
+  `platform.python_version()` is the only sanctioned environment read.
+  `tests/test_determinism.py` enforces this structurally.
+- **Register every constant.** A new numeric constant in a domain module needs a
+  `data/claim_ledger.yaml` entry in the same commit, or
+  `tests/test_claim_ledger.py` fails. Mark it `synthetic: true` unless it is a
+  commonly-cited figure for a real substance — and nothing here is a measurement.
+- **Demonstration inputs must not force their results.** The reference genome
+  plants a documented structure precisely so specificity and off-target risk are
+  measured rather than assumed; `tests/test_demo_evidence.py` fails if the
+  demonstration degenerates.
 - **Outputs are disposable.** Regenerate `output/` (git-ignored); never hand-edit.
 - **Local-only.** No remote, never push.
 

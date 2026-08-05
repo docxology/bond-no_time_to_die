@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import platform
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +28,7 @@ from no_time_to_die import (
 
 __all__ = [
     "REQUIRED_DEMO_KEYS",
+    "REQUIRED_TOP_LEVEL_KEYS",
     "check_demo_completeness",
     "generate_variables",
     "load_manuscript_config",
@@ -78,7 +78,7 @@ REQUIRED_DEMO_KEYS: dict[str, tuple[str, ...]] = {
         "delivered_fraction",
         "neutralization_probability",
     ),
-    "targeting": ("best_guide", "best_efficiency", "best_off_target_risk"),
+    "targeting": ("best_guide", "best_efficiency", "best_off_target_risk", "best_composite"),
     "toxicology_stats": ("min_ld50", "max_ld50", "median_ld50"),
     "antidote": ("best_antidote", "best_antagonized_fraction", "best_survival_probability"),
     "exposure": (
@@ -92,23 +92,38 @@ REQUIRED_DEMO_KEYS: dict[str, tuple[str, ...]] = {
 }
 
 
+#: Demo-result keys that live at the *top* level of the result rather than
+#: inside a section dict. ``garden_risk_combined`` is a bare float, so the
+#: section-keyed scan below is structurally blind to it: deleting it used to
+#: sail through this gate and then blow up as a raw ``KeyError`` inside
+#: :func:`generate_variables`, which is exactly the failure mode the gate
+#: advertises catching.
+REQUIRED_TOP_LEVEL_KEYS: tuple[str, ...] = ("garden_risk_combined",)
+
+
 def check_demo_completeness(results: demo.DemoResult) -> None:
     """Assert a demo result carries every key the manuscript tokens read.
+
+    Covers three structural regressions: a missing top-level key, a missing or
+    non-mapping section (reported as ``section.*``), and a missing key inside a
+    section.
 
     Args:
         results: A :func:`no_time_to_die.demo.run_demo` result to validate.
 
     Raises:
-        ValueError: naming every missing ``section.key`` pair. This is the
-            strict gate behind ``require_outputs``: it fails on a real
-            structural regression, not merely on an empty dict.
+        ValueError: naming every missing key path. This is the strict gate
+            behind ``require_outputs``: it fails on a real structural
+            regression, not merely on an empty dict.
     """
-    missing = [
-        f"{section}.{key}"
-        for section, keys in REQUIRED_DEMO_KEYS.items()
-        for key in keys
-        if key not in results[section]  # type: ignore[literal-required]
-    ]
+    raw: dict[str, Any] = dict(results)
+    missing = [key for key in REQUIRED_TOP_LEVEL_KEYS if key not in raw]
+    for section, keys in REQUIRED_DEMO_KEYS.items():
+        bucket = raw.get(section)
+        if not isinstance(bucket, dict):
+            missing.append(f"{section}.*")
+            continue
+        missing.extend(f"{section}.{key}" for key in keys if key not in bucket)
     if missing:
         raise ValueError(
             "demo result is missing manuscript-critical keys: " + ", ".join(sorted(missing))
@@ -147,6 +162,7 @@ def generate_variables(
     results = demo.run_demo() if results is None else results
     if require_outputs:
         check_demo_completeness(results)
+    raw: dict[str, Any] = dict(results)
     cm = results["countermeasure"]
 
     tox_stats = results["toxicology_stats"]
@@ -159,7 +175,13 @@ def generate_variables(
         val = mapping.get(key)
         return float(val) if isinstance(val, (int, float)) else default
 
-    best_guide = str(targeting.get("best_guide") or cm.get("best_guide") or "n/a")
+    # The specificity selector and the design ranking are different models and
+    # may legitimately disagree. Each prose section cites its own token; the
+    # cross-reference test fails if a section quotes the other one's answer.
+    cm_best_guide = str(cm.get("best_guide") or "n/a")
+    design_best_guide = str(targeting.get("best_guide") or "n/a")
+    best_guide = design_best_guide if design_best_guide != "n/a" else cm_best_guide
+    planted = demo.planted_segment_counts()
     exposure_params = demo.EXPOSURE_SCENARIO
     forensic_params = demo.FORENSIC_SCENARIO
     return {
@@ -174,15 +196,22 @@ def generate_variables(
         "HERACLES_MIN_LD50": str(tox_stats.get("min_ld50", 0.0)),
         "HERACLES_MAX_LD50": str(tox_stats.get("max_ld50", 0.0)),
         "HERACLES_MEDIAN_LD50": str(tox_stats.get("median_ld50", 0.0)),
-        "HERACLES_GARDEN_RISK_PCT": _fmt(results["garden_risk_combined"] * 100.0),
+        "HERACLES_GARDEN_RISK_PCT": _fmt(get_num(raw, "garden_risk_combined") * 100.0),
         "HERACLES_SPECIFICITY": _fmt(get_num(cm, "specificity") * 100.0),
         "HERACLES_ON_TARGET": _fmt(get_num(cm, "on_target")),
         "HERACLES_OFF_TARGET": _fmt(get_num(cm, "off_target")),
         "HERACLES_DELIVERED_PCT": _fmt(get_num(cm, "delivered_fraction") * 100.0),
         "HERACLES_BEST_GUIDE": best_guide,
+        "HERACLES_CM_BEST_GUIDE": cm_best_guide,
+        "HERACLES_DESIGN_BEST_GUIDE": design_best_guide,
         "HERACLES_NUM_GUIDES": str(len(demo.DEMO_CANDIDATES)),
         "HERACLES_GUIDE_LENGTH": str(len(best_guide)),
         "HERACLES_REFERENCE_LENGTH": str(len(demo.DEMO_REFERENCE)),
+        "HERACLES_REFERENCE_SEGMENTS": str(len(demo.DEMO_REFERENCE_SEGMENTS)),
+        "HERACLES_PLANTED_ON_TARGET": str(planted["on_target"]),
+        "HERACLES_PLANTED_NEAR_MISS": str(planted["near_miss"]),
+        "HERACLES_BEST_GUIDE_RISK": _fmt(get_num(targeting, "best_off_target_risk", 0.0)),
+        "HERACLES_BEST_COMPOSITE": _fmt(get_num(targeting, "best_composite", 0.0) * 100.0),
         "HERACLES_MAX_MISMATCHES": str(demo.DEMO_MAX_MISMATCHES),
         "HERACLES_ABSORPTION_RATE": str(demo.DEMO_ABSORPTION_RATE),
         "HERACLES_EXPOSURE_TIME": str(demo.DEMO_EXPOSURE_TIME),
@@ -225,8 +254,14 @@ def generate_variables(
         "HERACLES_FOR_NOISE": str(forensic_params["noise_rms"]),
         "HERACLES_FOR_VOLUME": str(forensic_params["volume_ml"]),
         "HERACLES_FOR_TRANSFER": str(forensic_params["transfer_fraction"]),
+        "HERACLES_FOR_SLOPE": str(forensic_params["calibration_slope"]),
+        "HERACLES_FOR_INTERCEPT": str(forensic_params["calibration_intercept"]),
+        # The single environment-dependent token. It is a property of the host
+        # interpreter, not a wall-clock or random read: two runs on one
+        # interpreter render byte-identical artifacts, two runs on different
+        # Python patch releases differ in exactly this one substring.
+        # ``tests/test_determinism.py`` pins that it is the only such token.
         "PYTHON_VERSION": platform.python_version(),
-        "GENERATION_TIMESTAMP": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
 
 

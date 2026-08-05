@@ -59,10 +59,12 @@ F = 1 - prod_i (1 - f_i(d_i))
 
 The `TOXIN_CATALOG` records `{{HERACLES_NUM_TOXINS}}` botanical toxins spanning
 LD50 from {{HERACLES_MIN_LD50}} to {{HERACLES_MAX_LD50}} mg/kg (median
-{{HERACLES_MEDIAN_LD50}}), each with a published-approximation value and a
-botanical source; `catalog_stats` reports that summary over any catalog, and
-the forensic spectral library profiles `{{HERACLES_NUM_LIBRARY}}` poisons for
-identification.
+{{HERACLES_MEDIAN_LD50}}), each with a botanical source, a commonly-cited
+order-of-magnitude LD50 recorded without a specific citation, and a Hill slope
+that is **not** sourced at all — the slopes are curve-shape parameters invented
+for this demonstration, registered as such in `data/claim_ledger.yaml`.
+`catalog_stats` reports that summary over any catalog, and the forensic spectral
+library profiles `{{HERACLES_NUM_LIBRARY}}` poisons for identification.
 
 ## Poison-delivery forensics (`delivery_forensics.py`)
 
@@ -74,8 +76,16 @@ detection `lod` is
 confidence = 1 / (1 + exp(-(snr - lod)))
 ```
 
-Concentration is back-computed from a linear calibration `S = m·C + b`
-(sub-LOD signals clamp to zero), the transferred dose is
+Concentration is back-computed from a linear calibration `S = m·C + b`. Signals
+below the *intercept* `b` clamp to zero, because the inverted line would
+otherwise return a negative concentration. That clamp is not a limit-of-detection
+test and `estimate_concentration` has no knowledge of the LOD: with the
+demonstration's `b` = {{HERACLES_FOR_INTERCEPT}} and an LOD SNR of
+{{HERACLES_LOD_SNR}}, a signal of 1.0 lies well below the limit of detection yet
+still returns a positive concentration. Deciding whether a signal is real is
+`detection_confidence`'s job. (Earlier revisions of this section and of the
+function docstring said "sub-LOD signals clamp to zero", conflating the two; the
+suite now pins the below-LOD-yet-positive case.) The transferred dose is
 `concentration · volume · transfer_fraction` (`recovered_dose`), and an unknown
 residue spectrum is identified by cosine similarity against the reference
 library (`match_unknown`). The demonstration operates at a
@@ -114,12 +124,18 @@ IC50_app = Ki * (1 + [S] / Km)
 with the toxin dose `[S]` and its LD50 standing in as the affinity proxy
 `Km`. The fraction of receptors occupied is the Langmuir isotherm
 `[A] / ([A] + IC50_app)` (`fraction_antagonized`). `screen_antidotes` ranks a
-library of `{{HERACLES_ANTIDOTE_COUNT}}` antagonists by the survival they
-restore against a toxin dose:
+library of `{{HERACLES_ANTIDOTE_COUNT}}` entries by the survival they restore
+against a toxin dose:
 
 ```
 residual = f_tox * (1 - f_antag);  survival = 1 - residual
 ```
+
+The `Ki` values fed to this model are invented, not published — see
+[Scope](#scope-and-related-work). The relation and the isotherm are real and are
+tested against hand-checkable values; the library entries are illustrative
+inputs named after real drugs, and the model is applied uniformly to all five
+regardless of whether the real drug is a competitive antagonist.
 
 ## Exposure assessment (`exposure_assessment.py`)
 

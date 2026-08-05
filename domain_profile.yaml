@@ -10,13 +10,21 @@ review_gates:
   - mypy_src_scripts
   - lineage_zero
   - zero_mocks
+  # Added 2026-08-05 after an adversarial audit found each of these claims
+  # asserted in prose with nothing enforcing it.
+  - determinism_no_clock_no_rng      # tests/test_determinism.py
+  - claim_ledger_matches_code        # tests/test_claim_ledger.py
+  - demo_inputs_not_self_fulfilling  # tests/test_demo_evidence.py
+  - import_graph_matches_docs        # tests/test_architecture.py
 
 source_policy:
   numeric_claims: data/claim_ledger.yaml
   procedural_math:
     - "Pure deterministic functions in src/no_time_to_die; verified by tests"
   synthetic_inputs:
-    - "Demo reference genome, guide set, and spectral fingerprints are synthetic calibrants documented in claim_ledger"
+    - "Demo reference genome, guide set, spectral fingerprints, Hill slopes, antidote Ki values, and every scenario parameter are invented for this demonstration (claim_ledger synthetic: true)"
+  measured_inputs:
+    - "None. The seven LD50 figures and the LOD SNR are commonly-cited order-of-magnitude values carried without a specific citation (claim_ledger synthetic: false); nothing in this package is a measurement."
 
 artifact_expectations:
   figures:

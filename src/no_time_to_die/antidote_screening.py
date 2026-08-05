@@ -14,9 +14,27 @@ classical pharmacology:
 * :func:`screen_antidotes` — rank a library of antidotes by the survival
   probability they restore against a specific toxin dose.
 
-The :data:`ANTIDOTE_LIBRARY` carries published-approximation inhibition
-constants (see ``data/claim_ledger.yaml``). The module is pure, deterministic,
-and importable without bond-api.
+**Provenance warning — the library constants are synthetic.** Earlier revisions
+of this module described :data:`ANTIDOTE_LIBRARY` as carrying
+"published-approximation inhibition constants". That was false, and it is
+withdrawn. No publication supports these five ``ki`` values; they are invented
+mg/L numbers chosen to spread the screen across a legible range, and they are
+marked ``synthetic: true`` in ``data/claim_ledger.yaml``. Two independent
+reasons they cannot be read as measurements:
+
+* The magnitudes are wrong by orders of magnitude. Naloxone and flumazenil
+  bind their receptors at nanomolar affinity; ``0.4`` and ``1.0`` mg/L are not
+  those numbers in any unit system.
+* Three of the five agents are not competitive receptor antagonists at all.
+  Pralidoxime reactivates phosphorylated acetylcholinesterase, acetylcysteine
+  is a glutathione precursor, and vitamin K is a substrate for an enzymatic
+  cycle. A ``Ki`` against a Langmuir receptor is not a quantity they possess.
+  The Cheng–Prusoff model below is applied to all five *uniformly*, which is a
+  property of this demonstration, not of the pharmacology.
+
+The mathematics (Cheng–Prusoff, Langmuir) is real and is tested exactly; the
+inputs it is fed here are illustrative. The module is pure, deterministic, and
+importable without bond-api.
 """
 
 from __future__ import annotations
@@ -41,7 +59,13 @@ __all__ = [
 
 @dataclass(frozen=True)
 class Antidote:
-    """A competitive antagonist with a published-approximation inhibition constant."""
+    """One entry in the antidote screen.
+
+    ``ki`` is a synthetic inhibition constant in mg/L (see the module
+    docstring: not a measured or published value). ``source`` names the real
+    clinical role of the drug the entry is *named after* — it labels the
+    entry, and is not a claim that this model reproduces that mechanism.
+    """
 
     name: str
     ki: float
@@ -56,13 +80,17 @@ class Antidote:
             raise ValueError("Antidote.source must be non-empty")
 
 
-#: Deterministic antidote library (published-approximation Ki values).
+#: Deterministic antidote library. Every ``ki`` here is SYNTHETIC — an invented
+#: mg/L constant, not a measured or published affinity (module docstring, and
+#: ``synthetic: true`` in ``data/claim_ledger.yaml``). ``source`` records the
+#: drug's real clinical role for readability only; only the first two entries
+#: are competitive receptor antagonists in reality.
 ANTIDOTE_LIBRARY: tuple[Antidote, ...] = (
     Antidote(name="naloxone", ki=0.4, source="opioid receptor antagonist"),
-    Antidote(name="flumazenil", ki=1.0, source="benzodiazepine antagonist"),
-    Antidote(name="pralidoxime", ki=2.0, source="organophosphate reactivator"),
-    Antidote(name="acetylcysteine", ki=0.8, source="paracetamol antidote"),
-    Antidote(name="vitamin_k", ki=5.0, source="anticoagulant antidote"),
+    Antidote(name="flumazenil", ki=1.0, source="benzodiazepine receptor antagonist"),
+    Antidote(name="pralidoxime", ki=2.0, source="organophosphate reactivator (not an antagonist)"),
+    Antidote(name="acetylcysteine", ki=0.8, source="glutathione precursor (not an antagonist)"),
+    Antidote(name="vitamin_k", ki=5.0, source="clotting-factor cofactor (not an antagonist)"),
 )
 
 

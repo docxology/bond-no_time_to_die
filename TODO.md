@@ -68,6 +68,49 @@ Forward-only backlog for the HERACLES film package (No Time to Die, 2021).
   constant; `07_scope_and_related_work.md` contained a garbled clause. All
   corrected, with ~30 new tokens so the setup table and results prose are live.
 
+## Phase-6 remediation — adversarial audit findings (done 2026-08-05)
+
+An adversarial verifier found eight claims asserted in prose with nothing
+enforcing them. Each was either made true or withdrawn; none was softened.
+
+- **Determinism was false.** `generate_variables` read
+  `datetime.now(timezone.utc)` and persisted it, so two runs differed — while
+  three documents claimed byte-reproducibility and "no wall-clock in persisted
+  artifacts". Token removed (not reworded). `tests/test_determinism.py` adds a
+  structural import ban on clocks/RNGs, a rendered-value scan for date/time
+  shapes, and a two-render byte comparison; the end-to-end two-run byte check
+  lives in `tests/test_scripts_smoke.py`.
+- **The claim ledger registered 18 of ~45 constants** while its header claimed
+  "every numeric constant used in the demonstration", with no enforcement.
+  Rewritten to v2.0.0 covering all of them; `tests/test_claim_ledger.py` derives
+  the expected set from the modules and fails on an unregistered constant, an
+  orphan, or a one-sided value edit.
+- **The antidote Ki values carried fabricated provenance** — labelled "Published
+  approximation" and left unflagged. No publication supports them; three of the
+  five agents are not competitive antagonists at all. Withdrawn and marked
+  synthetic in the ledger, the module docstring, and the manuscript.
+- **`check_demo_completeness` did not cover `garden_risk_combined`**, a
+  top-level float a token reads; deleting it passed the gate and then raised a
+  bare `KeyError`. Now declared in `REQUIRED_TOP_LEVEL_KEYS`, with an exhaustive
+  sweep that deletes every key of a real result and requires each deletion to be
+  either gate-named or provably token-irrelevant.
+- **`docs/architecture.md` denied the `antidote_screening → toxicology` edge.**
+  Corrected, and pinned by an AST-derived graph check in
+  `tests/test_architecture.py`.
+- **The concentration clamp was described as a limit-of-detection test.** It
+  compares against the calibration intercept. Corrected in both the docstring
+  and the methodology, with the below-LOD-yet-positive case pinned in tests.
+- **The headline countermeasure results were green by construction.**
+  `DEMO_REFERENCE` was `"AACCGGTTAACCGGTT" * 4`, a period-16 string scanned by a
+  16-nt guide, forcing 100% specificity / 0 off-targets / 0 off-target risk and
+  leaving the ranking blend inert. Replaced with a 144-nt reference of labelled
+  segments (2 planted exact hits, 3 declared near-misses, 4 fillers).
+  `tests/test_demo_evidence.py` verifies each label against the recomputed
+  Hamming distance and fails if the demonstration degenerates again.
+- **Five figure tests asserted only that a PNG was non-empty.** Each figure now
+  has a `build_*_figure()` the tests read back, binding the plotted series and
+  annotation positions to the `demo.py` constants the captions quote.
+
 ## Next candidate work
 
 - Extend the forensic library with more poison signatures and a mixture-match

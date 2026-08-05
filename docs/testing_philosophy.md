@@ -60,8 +60,16 @@ Fixed inputs (canonical constants in `demo.py`, including `DEMO_SEED`). Tests
 assert exact computed values against hand-checkable expectations — e.g. the
 even-median case uses ricin (LD50 1.0) and atropine (LD50 10.0) so the expected
 5.5 can be verified by eye rather than by re-implementing the function under
-test. Never tolerances around random draws, and never wall-clock behavior
-except the documented `GENERATION_TIMESTAMP` manuscript token.
+test. Never tolerances around random draws, and never wall-clock behavior at
+all — `tests/test_determinism.py` fails the build if any module under `src/`
+imports a clock or an RNG. The former `GENERATION_TIMESTAMP` carve-out was
+removed on 2026-08-05: it made the byte-reproducibility claim false while a
+test asserted only that the token *existed*.
+
+Demonstration inputs must not force their own results. `test_demo_evidence.py`
+fails if the reference genome degenerates back into a shape where specificity,
+off-target count, or the composite blend can only take one value — a result an
+input makes inevitable is not evidence.
 
 ## No-mock scan
 

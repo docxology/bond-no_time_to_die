@@ -12,8 +12,12 @@ package: **No Time to Die (2021)**, mission codename **HERACLES**.
 - **No mock framework** anywhere in `tests/` — real data + computation.
 - **≥90% line+branch coverage on `src/`:**
   `uv run pytest tests/ --cov=src --cov-fail-under=90`
-- Deterministic: fixed `seed = 11`, no untracked RNG, no wall-clock in
-  persisted artifacts.
+- Deterministic, enforced structurally by `tests/test_determinism.py`: no module
+  under `src/` may import `datetime`/`time`/`random`/`secrets`/`uuid`/`socket`/
+  `tempfile`, and the only environment read in the package is
+  `platform.python_version()` (the `PYTHON_VERSION` token). Two runs on one
+  interpreter render byte-identical artifacts. `seed = 11` is recorded for
+  provenance; nothing draws from an RNG, so it governs nothing today.
 - Thin orchestrators in `scripts/`; business logic in `src/`.
 - No leftover exemplar lineage strings (see verification).
 - Type hints + docstrings; `ruff` + `mypy` clean on `src/` and `scripts/`.

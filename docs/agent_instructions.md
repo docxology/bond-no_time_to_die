@@ -50,11 +50,24 @@ When you add a constant, ask which other file will want it.
 
 ## R5 — Determinism
 
-Fixed seed and inputs in `demo.py` (`DEMO_SEED`); no untracked RNG; no
-wall-clock in persisted artifacts or manuscript tokens (the
-`GENERATION_TIMESTAMP` token is the single allowed
-wall-clock stamp; `MissionOutcome.provenance.wall_time_s` is pinned to `0.0`
-for the same reason). Two runs must be byte-identical in generated artifacts.
+Fixed inputs in `demo.py`. **No module under `src/` may import `datetime`,
+`time`, `random`, `secrets`, `uuid`, `socket`, or `tempfile`**, and the package
+makes exactly one environment read in total — `platform.python_version()`,
+rendered as `PYTHON_VERSION`, the single host-dependent token.
+`MissionOutcome.provenance.wall_time_s` is pinned to `0.0` for the same reason.
+Two runs on one interpreter must be byte-identical in generated artifacts.
+
+There is no allowed wall-clock stamp. This rule previously carved out a
+`GENERATION_TIMESTAMP` token *and* demanded byte-identical runs in the same
+paragraph, which cannot both hold; the token stamped `datetime.now()` into the
+persisted JSON and into the rendered manuscript, and consecutive runs differed.
+The token is gone. `tests/test_determinism.py` enforces all three gates (import
+scan, rendered-value scan, two-render byte comparison) and each carries a
+positive control proving it reports a reintroduced violation.
+
+`DEMO_SEED` is recorded for provenance only: no code path draws from an RNG, so
+the seed governs nothing today. Say that rather than implying it controls
+reproducibility.
 
 ## R6 — No exemplar lineage
 
@@ -79,7 +92,10 @@ to fail".
 | R4 | literal `0.75` for sensitivity in prose | token cross-ref test |
 | R4 | a setup-table cell repeating a `demo.py` constant | review + strict token gate |
 | R4b | a renamed demo result key silently hydrating `0` | `check_demo_completeness` |
-| R5 | `time.time()` in a result | determinism review |
+| R5 | `time.time()` or `datetime.now()` anywhere in `src/` | `test_determinism.py` import scan |
+| R5 | a rendered token shaped like a date or a clock time | `test_determinism.py` value scan |
+| R7 | a ledger constant edited on one side only | `test_claim_ledger.py` |
+| R7 | a degenerate demo input that forces its own result | `test_demo_evidence.py` |
 | R6 | the literal `template[_]code_project` appears in a doc | lineage `rg` |
 | R7 | an assertion that cannot fail | positive-control tests |
 

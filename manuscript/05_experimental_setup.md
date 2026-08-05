@@ -16,7 +16,9 @@ constants at hydration time, so the table cannot drift from the code that runs:
 
 | Parameter | Value |
 | --- | --- |
-| Reference genome length | {{HERACLES_REFERENCE_LENGTH}} nt (periodic {{HERACLES_GUIDE_LENGTH}}-mer) |
+| Reference genome length | {{HERACLES_REFERENCE_LENGTH}} nt ({{HERACLES_REFERENCE_SEGMENTS}} labelled {{HERACLES_GUIDE_LENGTH}}-nt segments) |
+| — exact on-target windows planted | {{HERACLES_PLANTED_ON_TARGET}} |
+| — near-miss windows planted | {{HERACLES_PLANTED_NEAR_MISS}} |
 | Guide candidates | {{HERACLES_NUM_GUIDES}} |
 | Guide length | {{HERACLES_GUIDE_LENGTH}} nt |
 | Off-target tolerance `k` | {{HERACLES_MAX_MISMATCHES}} |
@@ -34,6 +36,7 @@ constants at hydration time, so the table cannot drift from the code that runs:
 | Forensic signal / RMS noise | {{HERACLES_FOR_SIGNAL}} / {{HERACLES_FOR_NOISE}} |
 | Forensic residue volume | {{HERACLES_FOR_VOLUME}} mL |
 | Forensic transfer fraction | {{HERACLES_FOR_TRANSFER}} |
+| Forensic calibration slope `m` / intercept `b` | {{HERACLES_FOR_SLOPE}} / {{HERACLES_FOR_INTERCEPT}} |
 | Limit-of-detection SNR | {{HERACLES_LOD_SNR}} |
 | Catalog flora | {{HERACLES_NUM_TOXINS}} |
 | Forensic library | {{HERACLES_NUM_LIBRARY}} |
@@ -41,8 +44,21 @@ constants at hydration time, so the table cannot drift from the code that runs:
 | Seed | {{HERACLES_SEED}} |
 | Canonical input digest (sha256, first 12) | `{{HERACLES_INPUT_HASH}}` |
 
-All are fixed at import; no run consumes wall-clock or random state, so
-results are byte-reproducible.
+All are fixed at import. No module in the package imports a clock or an RNG
+(structurally enforced — see [Reproducibility](#reproducibility)), so two runs
+on one interpreter render byte-identical artifacts. The single host-dependent
+value in the whole package is the `PYTHON_VERSION` token above.
+
+The reference genome is not an arbitrary or periodic string. It is assembled
+from labelled segments — {{HERACLES_PLANTED_ON_TARGET}} exact copies of the
+target guide, {{HERACLES_PLANTED_NEAR_MISS}} near-miss windows at declared
+Hamming distances, and neutral fillers — precisely so the specificity and
+off-target results are *measured against a known planted structure* rather than
+forced by the input. The earlier reference was `AACCGGTTAACCGGTT` repeated four
+times, whose period equalled the guide length; that reference could only ever
+return 100% specificity, zero off-target windows, and zero population
+off-target risk, so those numbers carried no information. See
+[Results](#results).
 
 ## Figure generation
 

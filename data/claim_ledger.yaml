@@ -1,69 +1,299 @@
-# claim_ledger.yaml — sourced numeric claims for HERACLES.
-# Every numeric constant used in the demonstration is registered here so the
-# evidence-registry validation can trace it to a source. LD50 figures are
-# standard published approximations for mammalian/human exposure (ranges span
-# published references); the forensic spectra and demo genome are synthetic
-# calibrants/inputs, explicitly not measured data.
-version: 1.0.0
+# claim_ledger.yaml — the numeric-constant registry for HERACLES.
+#
+# WHAT THIS FILE GUARANTEES (and what it does not)
+#
+# Guaranteed, and enforced by `tests/test_claim_ledger.py`: every numeric or
+# sequence constant that the demonstration consumes appears here exactly once,
+# with its live value, and the ledger contains no entry that no longer exists in
+# the code. The test derives the expected id set from the modules themselves, so
+# adding a toxin, a demo parameter, or a library entry without registering it
+# fails the build, and editing a value here without editing the code fails too.
+# Before 2026-08-05 the header made this claim with nothing enforcing it, and 20+
+# constants (every Hill coefficient, every demo scalar, the whole forensic
+# calibration) were in fact unregistered.
+#
+# NOT guaranteed: that a `synthetic: false` value is traceable to a specific
+# citation. The `source` field is a provenance *label*, not a reference. Only two
+# provenance classes exist here:
+#
+#   synthetic: true   — invented for this demonstration. No measurement claim.
+#   synthetic: false  — a commonly-cited order-of-magnitude figure for a real
+#                       substance, recorded without a specific citation, and used
+#                       as a plausible calibrant rather than as data.
+#
+# Nothing in this package is a measurement. See manuscript/07_scope_and_related_work.md.
+version: 2.0.0
 
 claims:
+  # --- Poison-garden catalog (src/no_time_to_die/toxicology.py) --------------
+  # LD50s are commonly-cited order-of-magnitude figures for real substances.
+  # The Hill slopes beside them are NOT: no source reports these coefficients,
+  # they are shape parameters chosen to give the catalog distinguishable curves.
   - id: ld50_ricin
-    value_mg_per_kg: 1.0
-    source: "Published approximation, ricin (Ricinus communis) oral/mammalian toxicity"
-    note: "Standard cited order-of-magnitude; synthetic-domain calibrant for Hill model"
+    value: 1.0
+    units: mg/kg
+    synthetic: false
+    source: "Commonly-cited order-of-magnitude figure, ricin (Ricinus communis)"
+  - id: hill_ricin
+    value: 2.0
+    units: dimensionless
+    synthetic: true
+    source: "Curve-shape parameter chosen for this demonstration"
   - id: ld50_atropine
-    value_mg_per_kg: 10.0
-    source: "Published approximation, atropine (Atropa belladonna) toxicity"
+    value: 10.0
+    units: mg/kg
+    synthetic: false
+    source: "Commonly-cited order-of-magnitude figure, atropine (Atropa belladonna)"
+  - id: hill_atropine
+    value: 1.5
+    units: dimensionless
+    synthetic: true
+    source: "Curve-shape parameter chosen for this demonstration"
   - id: ld50_coniine
-    value_mg_per_kg: 6.0
-    source: "Published approximation, coniine (Conium maculatum) toxicity"
+    value: 6.0
+    units: mg/kg
+    synthetic: false
+    source: "Commonly-cited order-of-magnitude figure, coniine (Conium maculatum)"
+  - id: hill_coniine
+    value: 1.2
+    units: dimensionless
+    synthetic: true
+    source: "Curve-shape parameter chosen for this demonstration"
   - id: ld50_aconitine
-    value_mg_per_kg: 1.5
-    source: "Published approximation, aconitine (Aconitum napellus) toxicity"
+    value: 1.5
+    units: mg/kg
+    synthetic: false
+    source: "Commonly-cited order-of-magnitude figure, aconitine (Aconitum napellus)"
+  - id: hill_aconitine
+    value: 2.5
+    units: dimensionless
+    synthetic: true
+    source: "Curve-shape parameter chosen for this demonstration"
   - id: ld50_strychnine
-    value_mg_per_kg: 2.0
-    source: "Published approximation, strychnine (Strychnos nux-vomica) toxicity"
+    value: 2.0
+    units: mg/kg
+    synthetic: false
+    source: "Commonly-cited order-of-magnitude figure, strychnine (Strychnos nux-vomica)"
+  - id: hill_strychnine
+    value: 1.8
+    units: dimensionless
+    synthetic: true
+    source: "Curve-shape parameter chosen for this demonstration"
   - id: ld50_nicotine
-    value_mg_per_kg: 0.8
-    source: "Published approximation, nicotine (Nicotiana tabacum) toxicity"
+    value: 0.8
+    units: mg/kg
+    synthetic: false
+    source: "Commonly-cited order-of-magnitude figure, nicotine (Nicotiana tabacum)"
+  - id: hill_nicotine
+    value: 1.4
+    units: dimensionless
+    synthetic: true
+    source: "Curve-shape parameter chosen for this demonstration"
   - id: ld50_cyanide
-    value_mg_per_kg: 1.5
-    source: "Published approximation, cyanogenic prussic acid toxicity"
+    value: 1.5
+    units: mg/kg
+    synthetic: false
+    source: "Commonly-cited order-of-magnitude figure, cyanogenic prussic acid"
+  - id: hill_cyanide
+    value: 3.0
+    units: dimensionless
+    synthetic: true
+    source: "Curve-shape parameter chosen for this demonstration"
+
+  # --- Antidote library (src/no_time_to_die/antidote_screening.py) -----------
+  # WITHDRAWN CLAIM. Ledger v1.0.0 labelled all five of these "Published
+  # approximation, <drug> Ki" and left them unflagged, i.e. on the
+  # measured-approximation side of this file's own distinction. That was
+  # fabricated provenance: no publication reports these numbers. Naloxone and
+  # flumazenil bind at nanomolar affinity, which 0.4 and 1.0 mg/L are not in any
+  # unit system; and pralidoxime (an AChE reactivator), acetylcysteine (a
+  # glutathione precursor), and vitamin K (a clotting-factor cofactor) are not
+  # competitive receptor antagonists and have no Ki of this kind at all. The
+  # values are invented spreads that make the screen legible.
+  - id: ki_naloxone
+    value: 0.4
+    units: mg/L
+    synthetic: true
+    source: "Invented inhibition constant; named after a real opioid antagonist"
+  - id: ki_flumazenil
+    value: 1.0
+    units: mg/L
+    synthetic: true
+    source: "Invented inhibition constant; named after a real benzodiazepine antagonist"
+  - id: ki_pralidoxime
+    value: 2.0
+    units: mg/L
+    synthetic: true
+    source: "Invented inhibition constant; the real drug is a reactivator, not an antagonist"
+  - id: ki_acetylcysteine
+    value: 0.8
+    units: mg/L
+    synthetic: true
+    source: "Invented inhibition constant; the real drug is a glutathione precursor"
+  - id: ki_vitamin_k
+    value: 5.0
+    units: mg/L
+    synthetic: true
+    source: "Invented inhibition constant; the real vitamin is an enzymatic cofactor"
+
+  # --- Forensic spectral library (src/no_time_to_die/delivery_forensics.py) --
+  # Synthetic 5-bin relative-response fingerprints. No instrument produced them.
+  - id: spectrum_ricin
+    value: [1.0, 0.2, 0.1, 0.05, 0.02]
+    units: relative response
+    synthetic: true
+    source: "Synthetic 5-bin calibrant fingerprint"
+  - id: spectrum_coniine
+    value: [0.1, 0.9, 0.3, 0.1, 0.04]
+    units: relative response
+    synthetic: true
+    source: "Synthetic 5-bin calibrant fingerprint"
+  - id: spectrum_aconitine
+    value: [0.05, 0.2, 0.95, 0.3, 0.1]
+    units: relative response
+    synthetic: true
+    source: "Synthetic 5-bin calibrant fingerprint"
+  - id: spectrum_cyanide
+    value: [0.02, 0.05, 0.1, 0.85, 0.4]
+    units: relative response
+    synthetic: true
+    source: "Synthetic 5-bin calibrant fingerprint"
+  - id: spectrum_atropine
+    value: [0.3, 0.7, 0.4, 0.2, 0.9]
+    units: relative response
+    synthetic: true
+    source: "Synthetic 5-bin calibrant fingerprint"
+  - id: default_lod_snr
+    value: 3.0
+    units: dimensionless
+    synthetic: false
+    source: "Conventional limit-of-detection signal-to-noise threshold (Currie 1968 framing)"
+
+  # --- Guide-design model parameters (src/no_time_to_die/targeting_design.py)
+  - id: ideal_gc
+    value: 0.5
+    units: fraction
+    synthetic: true
+    source: "Doench-style GC sweet spot, simplified to a single point"
+  - id: gc_penalty
+    value: 1.0
+    units: score per unit GC deviation
+    synthetic: true
+    source: "Model parameter chosen for this demonstration"
+  - id: homopolymer_penalty
+    value: 0.05
+    units: score per base beyond a run of 3
+    synthetic: true
+    source: "Model parameter chosen for this demonstration"
+  - id: distance_weight
+    value: 0.5
+    units: per mismatch
+    synthetic: true
+    source: "Exponential mismatch-decay weight chosen for this demonstration"
+
+  # --- Demonstration inputs (src/no_time_to_die/demo.py) --------------------
+  # Every constant below is a fixed input, not an observation.
+  - id: demo_reference
+    value: "AACCGGTTAACCGGTTGATCTAGCATCGGACTAACCGGTTAACCGGAACTGACTTGCAAGTCAGAACCGGTTAACCGGTTTTGGCCAATTGGCCATTCAGGATCCTAGGATCTTGGCCAATTGGCCTTGTCATGACCTGAATCG"
+    units: nucleotides
+    synthetic: true
+    source: "Synthetic 144-nt reference: 2 exact on-target windows, 3 declared near-misses, 4 fillers"
+    note: >-
+      Replaced the periodic "AACCGGTTAACCGGTT" * 4 reference on 2026-08-05. The
+      old one forced 100% specificity and zero off-target risk by construction;
+      this one plants a known structure so the result is measured, not assumed.
+  - id: demo_candidates
+    value: ["AACCGGTTAACCGGTT", "AACCGGTTAACCGGTC", "TTGGCCAATTGGCCAA", "AAAAAAAAAAAAAAAA"]
+    units: nucleotides
+    synthetic: true
+    source: "Synthetic candidate guide set (src/no_time_to_die/demo.py)"
+  - id: demo_max_mismatches
+    value: 2
+    units: mismatches
+    synthetic: true
+    source: "Off-target tolerance k chosen for this demonstration"
+  - id: demo_absorption_rate
+    value: 1.2
+    units: per hour
+    synthetic: true
+    source: "Absorption rate k_a chosen for this demonstration"
+  - id: demo_exposure_time
+    value: 4.0
+    units: hours
+    synthetic: true
+    source: "Exposure window chosen for this demonstration"
+  - id: demo_avidity
+    value: 3.0
+    units: dimensionless
+    synthetic: true
+    source: "Countermeasure avidity chosen for this demonstration"
   - id: demo_seed
     value: 11
+    units: dimensionless
+    synthetic: true
     source: "Fixed deterministic seed (src/no_time_to_die/demo.py)"
+    note: >-
+      Recorded for provenance completeness. No code path draws from an RNG, so
+      the seed currently governs nothing; tests/test_determinism.py enforces the
+      absence of RNG and wall-clock reads across the package.
+  - id: antagonist_conc
+    value: 10.0
+    units: mg/L
     synthetic: true
-  - id: lod_snr
-    value: 3.0
-    source: "Conventional limit-of-detection signal-to-noise threshold"
-  - id: forensic_spectra
-    value: "synthetic non-negative 5-bin fingerprints"
-    source: "Synthetic calibrants in src/no_time_to_die/delivery_forensics.py"
+    source: "Antidote-screen antagonist concentration chosen for this demonstration"
+  - id: antidote_screen_dose
+    value: 0.5
+    units: mg/kg
     synthetic: true
-  - id: demo_reference_genome
-    value: "periodic 64-nt ACGT string"
-    source: "Synthetic deterministic input (src/no_time_to_die/demo.py)"
+    source: "Ricin dose the antidote library is screened against"
+  - id: garden_doses
+    value:
+      ricin: 0.5
+      nicotine: 0.4
+      cyanide: 0.2
+    units: mg/kg
     synthetic: true
-  - id: guide_design_params
-    value: "ideal GC 0.5, GC penalty 1.0, homopolymer penalty 0.05, mismatch decay 0.5"
-    source: "Model parameters (src/no_time_to_die/targeting_design.py), Doench-style (Doench 2014)"
-    synthetic: true
-  - id: ki_naloxone
-    value_mg_per_l: 0.4
-    source: "Published approximation, naloxone Ki (antidote library)"
-  - id: ki_flumazenil
-    value_mg_per_l: 1.0
-    source: "Published approximation, flumazenil Ki"
-  - id: ki_pralidoxime
-    value_mg_per_l: 2.0
-    source: "Published approximation, pralidoxime Ki"
-  - id: ki_acetylcysteine
-    value_mg_per_l: 0.8
-    source: "Published approximation, acetylcysteine Ki"
-  - id: ki_vitamin_k
-    value_mg_per_l: 5.0
-    source: "Published approximation, vitamin K Ki"
+    source: "Garden-risk mixture doses chosen for this demonstration"
   - id: exposure_scenario
-    value: "conc 0.02, rate 0.5, duration 30, absorbed frac 0.2, elim 0.1, NOAEL 0.5, RfD 0.001"
-    source: "Synthetic deterministic exposure scenario (src/no_time_to_die/demo.py)"
+    value:
+      concentration: 0.02
+      contact_rate: 0.5
+      duration: 30.0
+      absorption_fraction: 0.2
+      elimination_rate: 0.1
+      noael: 0.5
+      reference_dose: 0.001
+    units: mixed (see exposure_assessment.py signatures)
     synthetic: true
+    source: "Synthetic deterministic exposure scenario (src/no_time_to_die/demo.py)"
+  - id: forensic_scenario
+    value:
+      signal: 9.0
+      noise_rms: 1.0
+      volume_ml: 0.5
+      transfer_fraction: 0.1
+      calibration_slope: 2.0
+      calibration_intercept: 0.5
+    units: mixed (see delivery_forensics.py signatures)
+    synthetic: true
+    source: "Synthetic deterministic Vesper trace scenario (src/no_time_to_die/demo.py)"
+  - id: forensic_unknown_spectrum
+    value: [0.98, 0.25, 0.12, 0.06, 0.03]
+    units: relative response
+    synthetic: true
+    source: "Synthetic unknown-residue spectrum recovered from the glass"
+  - id: delivery_plot_dose
+    value: 100.0
+    units: arbitrary mass
+    synthetic: true
+    source: "Delivery-kinetics figure dose (src/no_time_to_die/demo.py)"
+  - id: delivery_plot_elimination_rate
+    value: 0.4
+    units: per hour
+    synthetic: true
+    source: "Delivery-kinetics figure elimination rate k_e"
+  - id: delivery_plot_horizon_h
+    value: 12.0
+    units: hours
+    synthetic: true
+    source: "Delivery-kinetics figure time horizon"
