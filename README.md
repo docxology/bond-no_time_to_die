@@ -102,7 +102,8 @@ interpreter render byte-identical artifacts.
 ## See also
 
 - [`AGENTS.md`](AGENTS.md) — technical directives for this package.
-- [`TODO.md`](TODO.md) — what was built and declared integration points.
+- [`TODO.md`](TODO.md) — open work (grouped correctness / verification /
+  documentation / extension), accepted limitations, and the gate commands.
 - [`docs/`](docs/) — the agent-facing rulebook:
   [`agent_instructions.md`](docs/agent_instructions.md) (rules R1–R6),
   [`architecture.md`](docs/architecture.md) (layer contract + protocol

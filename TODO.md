@@ -1,140 +1,248 @@
-# no_time_to_die (HERACLES) — TODO
+# TODO — no_time_to_die (HERACLES)
 
-Forward-only backlog for the HERACLES film package (No Time to Die, 2021).
+`no_time_to_die` is the *No Time to Die* (2021) film package of the PROJECT BOND
+suite, codename **HERACLES**: a pure, deterministic Python domain core (DNA
+countermeasure targeting, guide design, poison-garden toxicology, antidote
+screening, exposure assessment, delivery forensics) plus a thin
+`bond_api.MissionProvider` adapter, a live-token manuscript, and a
+constant-by-constant provenance ledger. Verified state as of 2026-08-05 on this
+tree (commit `7b9382d`): `uv run pytest tests/ --cov=src --cov-fail-under=90`
+passes with **301 tests** and **100.00% line+branch coverage** on `src/`
+(687 statements, 216 branches, 0 missed); `ruff check`, `ruff format --check`,
+and `mypy src/ scripts/` are clean; the mock grep and the exemplar-lineage grep
+both report nothing; `git status --short` is empty. The Phase-6 adversarial
+audit is fully remediated — every finding in
+`../output/verify/no_time_to_die.json` was made true or withdrawn, and each is
+now pinned by a test with a positive control, so none of them reappears below.
 
-## Built (phase-2 conversion + phase-4 deepening complete)
+## Open work
 
-- **Pure domain core** (`src/no_time_to_die/`, bond-api-free):
-  - `bioweapon_counter.py` — DNA-targeted countermeasure: Hamming-window
-    specificity, off-target risk, one-compartment bateman delivery kinetics,
-    saturating neutralization probability.
-  - `targeting_design.py` — guide design & population off-target: GC/homopolymer
-    descriptors, Doench-style efficiency, exponential-decay population
-    off-target aggregation, deterministic guide ranking.
-  - `toxicology.py` — poison-garden Hill dose–response, 7-entry LD50 flora
-    catalog, response-addition mixtures.
-  - `antidote_screening.py` — competitive-antagonist pharmacology: Cheng–Prusoff
-    IC50, Langmuir occupancy, 5-antidote survival ranking.
-  - `exposure_assessment.py` — exposure pathway & risk: absorbed dose,
-    cumulative body burden, margin of exposure, risk quotient, verdict.
-  - `delivery_forensics.py` — vesper trace detection: SNR, logistic detection
-    confidence vs LOD, concentration recovery, cosine spectral matching.
-  - `demo.py` — canonical deterministic demonstration shared by mission and
-    manuscript variables (single source of truth for inputs/results).
-- **Protocol adapter**: `mission.py` implements the frozen `bond_api`
-  `MissionProvider` (brief/recon/plan/execute/debrief), exposes `PROVIDER` and
-  `GADGET_REGISTRY`, and registers all six domain modules as gadgets from the
-  single `demo.DOMAIN_MODULES` source of truth.
-- **scripts/**: `run_mission.py` (phase dispatcher) + thin `brief/recon/plan/
-  execute/debrief.py` wrappers; `z_generate_manuscript_variables.py`.
-- **manuscript/**: config.yaml (HERACLES identity) + prose sections with live
-  `{{TOKEN}}`s; `manuscript_variables.py` hydrates them.
-- **figures/**: five deterministic concept figures to `output/figures/`
-  (delivery kinetics, toxicology dose-response, guide efficiency, antidote
-  response, detection confidence), each reading the shared `demo.py` constants.
-- **tests/**: zero-mock suite — domain modules, mission lifecycle, discovery,
-  gadgets, manuscript token cross-reference (live gate), script smoke.
+Eight items. Two trace to entries still listed in
+`../output/verify/no_time_to_die.unresolved.json` (C2, D1); the rest were found
+by reading the tree this session.
 
-## Declared integration points
+### Correctness
 
-- **bond-api** — consumed via local path dependency (`pyproject.toml`
-  `[tool.uv.sources]`). Mission discovery assumption: the orchestrator adds
-  this package's `src/` to `sys.path` and discovers slug `no_time_to_die`.
-- **bond-utilities `mission_io.record_provenance_outcome`** — not yet bound.
-  Acceptance: when bond-utilities ships, persist each `MissionOutcome`
-  provenance via `mission_io` in `scripts/execute.py` (outcome already carries
-  package_version/seed/input_hash/wall_time_s for a clean bind).
+**C1 — `bond-api` path dependency is an absolute machine path.**
+`pyproject.toml:33` reads
+`bond-api = { path = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" }`.
+The package therefore cannot be synced from a relocated or cloned checkout, and
+this violates the standing "never hardcode paths" rule. `bond-cli` and
+`bond-orchestrator` already use the relative form (`{ path = "../bond-api" }`);
+most film packages, including this one, do not — so this is a suite-wide
+pattern, but fixing it here is self-contained and needs no sibling edits.
+*Done:* line 33 is `bond-api = { path = "../bond-api" }` and a sync + full suite
+succeeds with the package tree moved (or with the absolute path made
+unreachable).
+*Command:*
+```bash
+cp -R no_time_to_die /tmp/ntd_relocate && cd /tmp/ntd_relocate \
+  && ln -s "$OLDPWD/../bond-api" ../bond-api \
+  && uv sync --all-extras && uv run pytest tests/ -q
+```
 
-## Phase-5 hardening (done)
+**C2 — `mission.py` still emits the withdrawn "fixed seed" framing.**
+`src/no_time_to_die/mission.py:108-110` builds
+`Constraint(kind="determinism", detail="fixed seed, no random draws, no external calls")`
+into every `MissionBrief`. Phase-6 established that `DEMO_SEED` governs nothing
+(no code path draws from an RNG) and corrected the wording in `AGENTS.md:19-20`,
+`docs/agent_instructions.md:68-69`, `manuscript/06_reproducibility.md:34-36`,
+and `data/claim_ledger.yaml:237` — the protocol payload was missed, so the one
+copy an orchestrator or `bond-cli` actually reads is the one still implying the
+seed does work. *(Residual of unresolved-audit entry #3.)*
+*Done:* the constraint detail no longer asserts a governing seed (e.g.
+`"no clock, no RNG, no external calls"`), and `tests/test_mission.py` asserts
+the emitted detail rather than leaving it unpinned — so a re-introduction fails.
+*Command:* `uv run pytest tests/test_mission.py -q && rg -n "fixed seed" src/ scripts/ docs/ manuscript/ AGENTS.md README.md`
+(expected: no hits in `src/`).
 
-- Removed unfalsifiable code: the unreachable zero-length `weights` guard in
-  `positional_bonus`, the `assert best_guide is not None` in
-  `select_best_guide`, five `assert isinstance` narrowings in `mission.execute`,
-  eight `isinstance` re-narrowings in `generate_variables`, and the dead `int`
-  branch in `_fmt`. `demo.run_demo()` now returns a `DemoResult` TypedDict, so
-  the narrowing is unnecessary rather than merely deleted.
-- Replaced the unfalsifiable `require_outputs` check (a `not cm` test on a dict
-  that is never empty) with `check_demo_completeness`, which enumerates every
-  key the tokens read and is positive-controlled key-by-key in the suite.
-- Fixed two test defects: a tautological `FIGURES_DIR` assertion, and a
-  `plots.FIGURES_DIR` mutation that leaked a torn-down `tmp_path` into later
-  tests.
-- Fixed a figure/data contradiction: the delivery-kinetics plot marked a 2.0 h
-  "exposure window" against a 4.0 h `DEMO_EXPOSURE_TIME`, and duplicated the
-  absorption rate as a literal. Both now read `demo.py`.
-- Manuscript: the abstract claimed three modules (there are six); the abstract
-  and methodology reported the catalog LD50 range as min→**median**, understating
-  the true max; the experimental-setup table hand-authored every `demo.py`
-  constant; `07_scope_and_related_work.md` contained a garbled clause. All
-  corrected, with ~30 new tokens so the setup table and results prose are live.
+**C3 — `therapeutic_window` / `margin_of_safety` are advertised but consumed by
+nothing.** Defined at `src/no_time_to_die/antidote_screening.py:148` and `:161`,
+exported at `:53,56`, and listed in `docs/architecture.md:33` as part of what
+the module computes. No caller exists in `src/` (`screen_antidotes`,
+`screen_report`, `demo.run_demo`, `mission.execute`, and
+`manuscript_variables.generate_variables` all ignore them), no manuscript token
+reads them, and they are reachable only from
+`tests/test_antidote_screening.py:82-95`. They are therefore 100%-covered dead
+public surface: the coverage figure asserts nothing about them being used.
+*Done:* either (a) `screen_report` returns a window/margin per antidote, a
+`HERACLES_*` token quotes it, and the claim ledger registers any new constant;
+or (b) both functions are removed from the module, `__all__`, the tests, and
+`docs/architecture.md:33`. Not both, and not left as-is.
+*Command:* `uv run pytest tests/ --cov=src --cov-fail-under=90 -q && rg -n "therapeutic_window|margin_of_safety" src/ manuscript/ docs/`
 
-## Phase-6 remediation — adversarial audit findings (done 2026-08-05)
+### Verification
 
-An adversarial verifier found eight claims asserted in prose with nothing
-enforcing them. Each was either made true or withdrawn; none was softened.
+**V1 — `match_unknown`'s all-or-nothing contract is documented but untested.**
+`src/no_time_to_die/delivery_forensics.py:159-162` states it raises
+`ValueError` "if `unknown_spectrum` … length differs from *any* library
+spectrum — matching is all-or-nothing, never a partial ranking over the
+compatible subset". `tests/test_delivery_forensics.py:124-141` covers the happy
+path, the empty library, descending order, and a custom library, but never
+passes a heterogeneous-length library. The invariant that distinguishes this
+design from a partial ranking is the one behaviour nothing can fail on. (The
+underlying `cosine_similarity` length check is tested at
+`tests/test_delivery_forensics.py:110`, which is a different claim.)
+*Done:* a test in `tests/test_delivery_forensics.py` passes a library where one
+entry is length-compatible and one is not, and asserts `ValueError` — proving no
+partial ranking is returned.
+*Command:* `uv run pytest tests/test_delivery_forensics.py -q`
 
-- **Determinism was false.** `generate_variables` read
-  `datetime.now(timezone.utc)` and persisted it, so two runs differed — while
-  three documents claimed byte-reproducibility and "no wall-clock in persisted
-  artifacts". Token removed (not reworded). `tests/test_determinism.py` adds a
-  structural import ban on clocks/RNGs, a rendered-value scan for date/time
-  shapes, and a two-render byte comparison; the end-to-end two-run byte check
-  lives in `tests/test_scripts_smoke.py`.
-- **The claim ledger registered 18 of ~45 constants** while its header claimed
-  "every numeric constant used in the demonstration", with no enforcement.
-  Rewritten to v2.0.0 covering all of them; `tests/test_claim_ledger.py` derives
-  the expected set from the modules and fails on an unregistered constant, an
-  orphan, or a one-sided value edit.
-- **The antidote Ki values carried fabricated provenance** — labelled "Published
-  approximation" and left unflagged. No publication supports them; three of the
-  five agents are not competitive antagonists at all. Withdrawn and marked
-  synthetic in the ledger, the module docstring, and the manuscript.
-- **`check_demo_completeness` did not cover `garden_risk_combined`**, a
-  top-level float a token reads; deleting it passed the gate and then raised a
-  bare `KeyError`. Now declared in `REQUIRED_TOP_LEVEL_KEYS`, with an exhaustive
-  sweep that deletes every key of a real result and requires each deletion to be
-  either gate-named or provably token-irrelevant.
-- **`docs/architecture.md` denied the `antidote_screening → toxicology` edge.**
-  Corrected, and pinned by an AST-derived graph check in
-  `tests/test_architecture.py`.
-- **The concentration clamp was described as a limit-of-detection test.** It
-  compares against the calibration intercept. Corrected in both the docstring
-  and the methodology, with the below-LOD-yet-positive case pinned in tests.
-- **The headline countermeasure results were green by construction.**
-  `DEMO_REFERENCE` was `"AACCGGTTAACCGGTT" * 4`, a period-16 string scanned by a
-  16-nt guide, forcing 100% specificity / 0 off-targets / 0 off-target risk and
-  leaving the ranking blend inert. Replaced with a 144-nt reference of labelled
-  segments (2 planted exact hits, 3 declared near-misses, 4 fillers).
-  `tests/test_demo_evidence.py` verifies each label against the recomputed
-  Hamming distance and fails if the demonstration degenerates again.
-- **Five figure tests asserted only that a PNG was non-empty.** Each figure now
-  has a `build_*_figure()` the tests read back, binding the plotted series and
-  annotation positions to the `demo.py` constants the captions quote.
+**V2 — the function inventory in `docs/architecture.md` is unbound prose.**
+`tests/test_architecture.py` binds the *import graph* and the layer rules to the
+source by AST, and proves the derivation can fail. It does not bind the table at
+`docs/architecture.md:28-36`, which names roughly thirty public functions and
+constants (`plasma_concentration`, `dose_for_fraction`, `catalog_stats`,
+`risk_quotient`, `vesper_trace_report`, …). Renaming or deleting any of them
+leaves that table silently wrong — the exact drift class that produced the
+SEVERE and MODERATE doc-vs-code findings in the Phase-6 audit.
+*Done:* a test parses the backticked identifiers out of that table, resolves the
+module each row names, and asserts every identifier is in that module's
+`__all__`; a negative control (a fabricated identifier injected into a temp copy
+of the table) proves the parse is not vacuous.
+*Command:* `uv run pytest tests/test_architecture.py -q`
 
-## Next candidate work
+### Documentation
 
-- Extend the forensic library with more poison signatures and a mixture-match
-  ranking test (currently `match_unknown` ranks single spectra only).
-- `match_unknown` requires the unknown spectrum to be length-compatible with
-  *every* library entry; a heterogeneous-length library would raise rather than
-  rank the compatible subset. Decide whether that is the desired contract and
-  either document it as invariant or relax it.
-- Wire bond-utilities provenance once the dependency's phase-1 is converted
-  (see Declared integration points).
-- `therapeutic_window` / `margin_of_safety` in `antidote_screening.py` are
-  tested but not consumed by `screen_report`, the mission, or any token —
-  either surface them in the screen result or drop them.
+**D1 — the seven LD50 values carry no citation.**
+`data/claim_ledger.yaml:32,42,52,62,72,82,92` register `ld50_ricin`,
+`ld50_atropine`, `ld50_coniine`, `ld50_aconitine`, `ld50_strychnine`,
+`ld50_nicotine`, `ld50_cyanide` as `synthetic: false` with a `source` that is a
+label ("Commonly-cited order-of-magnitude figure, …"), not a reference; the
+values live in `src/no_time_to_die/toxicology.py:109` (`TOXIN_CATALOG`).
+`manuscript/references.bib` has 14 entries, none of them toxicological. The
+ledger header (`data/claim_ledger.yaml:15-23`) is honest about this — that is
+the *stated limitation* resolution the audit accepted, not a made-true one.
+*(Carried from unresolved-audit entry #1.)*
+*Done:* each `ld50_*` entry gains a `citation:` key naming a specific
+publication or authoritative compendium, those references land in
+`manuscript/references.bib` and `manuscript/99_references.md`, and
+`manuscript/07_scope_and_related_work.md:19-22` is updated to say the values are
+sourced rather than carried without a citation. Anything that cannot be sourced
+must be re-flagged `synthetic: true` instead of being left in the middle.
+*Command:* `uv run pytest tests/test_claim_ledger.py -q && rg -n "citation:" data/claim_ledger.yaml | wc -l`
+(expected: 7 or more, and every uncited `synthetic: false` toxin entry gone).
 
-## Gates
+### Extension
 
-Coverage, test count, and lint status are **not** quoted here by design: run
-the gates and read their output. They are the source of truth, and a number
-copied into this file would be stale by the next commit.
+**E1 — bind `bond-utilities` provenance persistence (now unblocked).**
+`TODO.md` has carried this as "not yet bound" since phase 2, but the dependency
+has shipped:
+`../bond-utilities/src/bond_utilities/mission_io.py:153` defines
+`record_provenance_outcome(mission_id, seed, version, input_payload, outcome, path, fmt=None, codename=None, started_at=None, now=None)`.
+`scripts/execute.py` currently just forwards to `run_mission.main(["execute"])`
+and persists nothing; `mission.execute` already builds a `Provenance` carrying
+package version, `DEMO_SEED`, `demo.input_hash()`, and `wall_time_s`, so the
+bind is mechanical. **Determinism trap:** `record_provenance_outcome` calls
+`datetime.now(timezone.utc)` unless *both* `started_at` and `now` are supplied —
+writing its record into a tracked artifact without pinning those reintroduces
+exactly the wall-clock defect Phase-6 removed, and
+`tests/test_determinism.py:147-172` will only catch it if the record is inside
+the rendered manuscript tree.
+*Done:* `scripts/execute.py` (or `run_mission.py`) writes the mission record via
+`mission_io.record_provenance_outcome` with a pinned `started_at`/`now` into
+`output/data/` (the existing artifact directory, e.g.
+`output/data/mission_record.json`), the written file is byte-identical across
+two runs, and `bond-utilities` is declared in `pyproject.toml`
+`[tool.uv.sources]`.
+*Command:*
+```bash
+REC=output/data/mission_record.json
+uv run python scripts/run_mission.py execute && cp "$REC" /tmp/r1.json \
+  && uv run python scripts/run_mission.py execute && diff /tmp/r1.json "$REC" \
+  && uv run pytest tests/test_determinism.py tests/test_scripts_smoke.py -q
+```
+
+**E2 — mixture spectral matching in `delivery_forensics`.**
+`match_unknown` (`src/no_time_to_die/delivery_forensics.py:150`) ranks a single
+unknown spectrum against the 5-entry `SPECTRUM_LIBRARY` (`:141-147`) by cosine
+similarity. A residue that is a blend of two library poisons ranks as a poor
+single match with no indication that it is a mixture, even though `toxicology`
+already models mixtures (`combined_fraction_affected`, Bliss response addition).
+*Done:* a mixture-aware ranking (e.g. non-negative two-component decomposition)
+exists with tests that pin a synthesised 60/40 blend to the correct pair and to
+approximately the right weights, its constants are registered in
+`data/claim_ledger.yaml`, and the method appears in
+`manuscript/02_methodology.md`.
+*Command:* `uv run pytest tests/test_delivery_forensics.py tests/test_claim_ledger.py -q`
+
+## Known limitations (not bugs)
+
+These are accepted and recorded so they are not re-litigated. Several are the
+honest scope the Phase-6 audit forced claims down to.
+
+- **Nothing in this package is a measurement.** `synthetic: false` in
+  `data/claim_ledger.yaml` means "a commonly-cited order-of-magnitude figure for
+  a real substance, recorded without a specific citation, used as a plausible
+  calibrant" — the `source` field is a provenance *label*, not a reference. This
+  is stated in the ledger header (`:15-23`) and in
+  `manuscript/07_scope_and_related_work.md`. D1 above is the open half of this;
+  the labelling itself is settled.
+- **The reference genome is a constructed input.** `demo.DEMO_REFERENCE` is 144
+  nt assembled from labelled segments with planted exact hits, declared
+  near-misses at known Hamming distances, and fillers. Countermeasure and
+  guide-design results therefore establish *recovery of a planted structure* and
+  discrimination between candidates — not performance on an unseen genome.
+  Real-genome or held-out evaluation is deliberately out of scope for a film
+  package; the claim is stated in exactly these terms in Results, Setup, Scope,
+  and Conclusion, and `tests/test_demo_evidence.py` fails if the demonstration
+  degenerates back to a self-fulfilling reference. *(Unresolved-audit entry #2,
+  accepted as scope.)*
+- **`DEMO_SEED = 11` governs nothing.** No code path draws from an RNG. The
+  constant is retained because it is part of the frozen `Provenance` record the
+  protocol carries, not because it controls behaviour. Do not "fix" this by
+  adding randomness. *(Unresolved-audit entry #3; C2 above is the one remaining
+  place the prose was not updated.)*
+- **The antidote screen demonstrates arithmetic, not pharmacology.** All five
+  `Ki` values are `synthetic: true` after the Phase-6 withdrawal, and three of
+  the five agents are not competitive antagonists at all — the Cheng–Prusoff
+  model is applied uniformly regardless. See
+  `manuscript/07_scope_and_related_work.md`, "Withdrawn claim".
+- **Byte-identity is per-interpreter.** Across Python versions exactly one
+  rendered substring differs: the `PYTHON_VERSION` token, the package's single
+  environment read. `tests/test_determinism.py:243` pins that it is the only one.
+- **`match_unknown` is all-or-nothing by design.** A library containing any
+  length-incompatible spectrum raises rather than ranking the compatible subset.
+  This is the intended contract (documented at
+  `src/no_time_to_die/delivery_forensics.py:159-162`); V1 asks for a test, not a
+  behaviour change.
+- **The package is not standalone-installable.** It depends on the sibling
+  `bond-api` tree by path; there is no index release. C1 makes that path
+  relative, not remote.
+- **Local-only tree.** No remote, never push; commits stay inside this
+  repository.
+
+## Verification
+
+Run from the package root
+(`projects/working/bond/no_time_to_die`). If `uv` reports
+`Failed to initialize cache at ~/.cache/uv`, the shell sandbox is blocking it —
+re-run the same command unsandboxed.
 
 ```bash
 uv run pytest tests/ --cov=src --cov-fail-under=90
+# → 301 passed; TOTAL 100.00% (line+branch) on src/; gate is >=90%
+
 uv run ruff check src/ scripts/ tests/ && uv run ruff format --check src/ scripts/ tests/
+# → "All checks passed!" and "34 files already formatted"
+
 uv run mypy src/ scripts/
+# → "Success: no issues found in 19 source files"
+
 grep -rn "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo Clean
+# → Clean (zero-mock policy)
+
+rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**' --glob '!output/**' || echo Clean
+# → Clean (no exemplar lineage)
+
 git status --short
+# → empty
 ```
+
+Targeted gates worth knowing by name: `tests/test_determinism.py` (import scan,
+rendered-value scan, two-render byte comparison, all positive-controlled),
+`tests/test_claim_ledger.py` (constant registry derived from the modules),
+`tests/test_demo_evidence.py` (the demonstration is not green by construction),
+`tests/test_architecture.py` (AST import graph vs `docs/architecture.md`), and
+`tests/test_scripts_smoke.py` (real subprocess runs, strict mode, end-to-end
+two-run byte equality).
