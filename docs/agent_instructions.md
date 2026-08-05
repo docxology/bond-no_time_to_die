@@ -30,17 +30,44 @@ Every numeric value in `manuscript/[0-9]*.md` must be a `{{TOKEN}}` resolved by
 the shared `demo.py` result. Hardcoding a number that changes when config or
 code changes is the primary manuscript-drift bug.
 
+This covers **setup parameters, not just results**. The experimental-setup
+table once repeated the `demo.py` constants as literals; changing a constant
+silently falsified the table. Every cell is now a token. The exempt numerals
+are film years, citation years/pages, ordered-list indices, formula constants
+inside fenced blocks, and the coverage-gate threshold (which describes the gate
+rather than reporting a measurement).
+
+Figure captions count as prose: if a figure annotates a parameter, the renderer
+must read it from `demo.py` and the caption must cite the same token.
+
+## R4b — Prefer a source of truth over a repeated literal
+
+If a value appears in two places it will eventually appear in two *different*
+places. `demo.DOMAIN_MODULES` exists so the gadget registry and the module-count
+token cannot disagree; `demo.DELIVERY_PLOT_*` exists because the delivery figure
+previously marked a 2.0 h "exposure window" while the demonstration used 4.0 h.
+When you add a constant, ask which other file will want it.
+
 ## R5 — Determinism
 
-Fixed `seed = 11`; no untracked RNG; no wall-clock in persisted artifacts or
-manuscript tokens (the `GENERATION_TIMESTAMP` token is the single allowed
-wall-clock stamp). Two runs must be byte-identical in generated artifacts.
+Fixed seed and inputs in `demo.py` (`DEMO_SEED`); no untracked RNG; no
+wall-clock in persisted artifacts or manuscript tokens (the
+`GENERATION_TIMESTAMP` token is the single allowed
+wall-clock stamp; `MissionOutcome.provenance.wall_time_s` is pinned to `0.0`
+for the same reason). Two runs must be byte-identical in generated artifacts.
 
 ## R6 — No exemplar lineage
 
 Do not reintroduce the template exemplar's name or file names. The lineage `rg`
 gate uses the bracket-split spell `template[_]code_project` so this doc cannot
 trip its own check.
+
+## R7 — Every gate must be able to fail
+
+Do not add a defensive branch no input can reach, an assertion true by
+construction, or an enumerated check without a positive control proving each
+entry is load-bearing. See `docs/testing_philosophy.md` § "A gate must be able
+to fail".
 
 ## Consequence matrix
 
@@ -50,8 +77,11 @@ trip its own check.
 | R2 | `import bond_api` in `toxicology.py` | mypy/import lock + review |
 | R3 | gradient math inside a script | review + tests |
 | R4 | literal `0.75` for sensitivity in prose | token cross-ref test |
+| R4 | a setup-table cell repeating a `demo.py` constant | review + strict token gate |
+| R4b | a renamed demo result key silently hydrating `0` | `check_demo_completeness` |
 | R5 | `time.time()` in a result | determinism review |
 | R6 | the literal `template[_]code_project` appears in a doc | lineage `rg` |
+| R7 | an assertion that cannot fail | positive-control tests |
 
 ## Pre-submit checklist
 

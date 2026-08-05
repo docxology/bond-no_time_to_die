@@ -1,7 +1,7 @@
 """Hydrate manuscript tokens and render HERACLES figures (thin orchestrator).
 
 Writes ``output/data/manuscript_variables.json``, resolves the substituted
-manuscript tree to ``output/manuscript/``, and renders the three concept
+manuscript tree to ``output/manuscript/``, and renders the five concept
 figures under ``output/figures/``. Strict by default: any unresolved
 ``{{TOKEN}}`` fails the run.
 

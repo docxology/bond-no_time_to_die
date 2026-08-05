@@ -7,7 +7,10 @@ from pathlib import Path
 
 import pytest
 
+from no_time_to_die import demo
 from no_time_to_die.manuscript_variables import (
+    REQUIRED_DEMO_KEYS,
+    check_demo_completeness,
     generate_variables,
     load_manuscript_config,
     resolve_manuscript_tree,
@@ -142,3 +145,57 @@ class TestResolveTree:
             variables, manuscript_dir=src, output_dir=out, strict=False
         )
         assert names == ["00_c.md"]
+
+
+class TestConfigValidation:
+    """The 'paper' section guard and the author fallback are real branches."""
+
+    def _write_config(self, tmp_path: Path, body: str) -> Path:
+        path = tmp_path / "config.yaml"
+        path.write_text(body, encoding="utf-8")
+        return path
+
+    def test_non_mapping_paper_section_raises(self, tmp_path) -> None:
+        bad = self._write_config(tmp_path, "paper:\n  - not\n  - a\n  - mapping\n")
+        with pytest.raises(ValueError, match="'paper' section must be a mapping"):
+            generate_variables(config_path=bad)
+
+    def test_missing_authors_yields_empty_author_token(self, tmp_path) -> None:
+        minimal = self._write_config(tmp_path, 'paper:\n  title: "T"\nfilm:\n  codename: "X"\n')
+        variables = generate_variables(config_path=minimal)
+        assert variables["HERACLES_AUTHOR"] == ""
+        assert variables["HERACLES_CODENAME"] == "X"
+
+
+class TestDemoCompletenessGate:
+    """The strict gate must fail on a real structural regression."""
+
+    def test_intact_demo_result_passes(self) -> None:
+        check_demo_completeness(demo.run_demo())
+
+    def test_dropped_key_is_reported(self) -> None:
+        results = demo.run_demo()
+        del results["countermeasure"]["specificity"]
+        with pytest.raises(ValueError, match=r"countermeasure\.specificity"):
+            check_demo_completeness(results)
+
+    def test_every_required_key_is_individually_load_bearing(self) -> None:
+        """Positive control: each declared key must actually be absent-able."""
+        for section, keys in REQUIRED_DEMO_KEYS.items():
+            for key in keys:
+                results = demo.run_demo()
+                del results[section][key]  # type: ignore[literal-required]
+                with pytest.raises(ValueError, match=re.escape(f"{section}.{key}")):
+                    check_demo_completeness(results)
+
+    def test_generate_variables_propagates_the_gate(self) -> None:
+        results = demo.run_demo()
+        del results["exposure"]["verdict"]
+        with pytest.raises(ValueError, match="manuscript-critical keys"):
+            generate_variables(results=results, require_outputs=True)
+
+    def test_require_outputs_false_skips_the_gate(self) -> None:
+        results = demo.run_demo()
+        del results["exposure"]["verdict"]
+        variables = generate_variables(results=results, require_outputs=False)
+        assert variables["HERACLES_EXPOSURE_VERDICT"] == "n/a"

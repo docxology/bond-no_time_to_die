@@ -9,13 +9,13 @@ Technical rulebook for agents and developers working inside the
 | --- | --- |
 | `README.md` | `docs/` navigation (this file) |
 | `AGENTS.md` | `docs/` index — overview of this directory |
-| `agent_instructions.md` | Behavioral rules R1–R6 for AI agents (read-first) |
-| `architecture.md` | Layer boundaries, dependency direction, how-to-add-concept |
+| `agent_instructions.md` | Behavioral rules R1–R7 for AI agents (read-first) |
+| `architecture.md` | Layer boundaries, per-module inventory, how `mission.py` implements the frozen MissionProvider, how-to-add-concept |
 | `testing_philosophy.md` | Zero-mock policy and coverage mechanics |
 
 ## Reading order
 
-1. `agent_instructions.md` — start here; 6 hard rules + consequence matrix.
+1. `agent_instructions.md` — start here; 7 hard rules + consequence matrix.
 2. `architecture.md` — layer boundaries before touching any file.
 3. `testing_philosophy.md` — zero-mock constraint before writing tests.
 

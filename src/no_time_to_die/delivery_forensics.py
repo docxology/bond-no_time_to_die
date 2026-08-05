@@ -146,8 +146,9 @@ def match_unknown(
     (deterministic tie-break by name). An empty library yields an empty tuple.
 
     Raises:
-        ValueError: if ``unknown_spectrum`` is incompatible with every library
-            spectrum.
+        ValueError: if ``unknown_spectrum`` is empty, all-zero, or its length
+            differs from *any* library spectrum — matching is all-or-nothing,
+            never a partial ranking over the compatible subset.
     """
     library = SPECTRUM_LIBRARY if library is None else library
     if not library:

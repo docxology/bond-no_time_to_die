@@ -39,11 +39,8 @@ from bond_api.registry import GadgetRegistry  # type: ignore[import-untyped]
 from no_time_to_die import (
     __version__,
     antidote_screening,
-    bioweapon_counter,
     delivery_forensics,
     demo,
-    exposure_assessment,
-    targeting_design,
     toxicology,
 )
 
@@ -67,20 +64,13 @@ def register_gadgets(registry: GadgetRegistry | None = None) -> GadgetRegistry:
 
     Uses :data:`GADGET_REGISTRY` unless an explicit ``registry`` is supplied —
     coordinators pass their own :class:`bond_api.registry.GadgetRegistry`. The
-    gadget payloads are the pure domain modules. Returns the registry.
+    gadget payload is a ``{name: module}`` mapping taken verbatim from
+    :data:`no_time_to_die.demo.DOMAIN_MODULES`, so the registry can never
+    advertise a different module set than the package actually ships. Returns
+    the registry.
     """
     target = GADGET_REGISTRY if registry is None else registry
-    target.register(
-        "no_time_to_die",
-        {
-            "bioweapon_counter": bioweapon_counter,
-            "targeting_design": targeting_design,
-            "toxicology": toxicology,
-            "antidote_screening": antidote_screening,
-            "exposure_assessment": exposure_assessment,
-            "delivery_forensics": delivery_forensics,
-        },
-    )
+    target.register("no_time_to_die", dict(demo.DOMAIN_MODULES))
     return target
 
 
@@ -178,28 +168,18 @@ class MissionProvider:
     def execute(self, plan: MissionPlan) -> MissionOutcome:
         """Run the deterministic domain assessment and return a full outcome."""
         results = demo.run_demo()
-        countermeasure = results["countermeasure"]
-        assert isinstance(countermeasure, dict)
-        targeting = results["targeting"]
-        assert isinstance(targeting, dict)
-        toxicology_stats = results["toxicology_stats"]
-        antidote = results["antidote"]
-        assert isinstance(antidote, dict)
-        exposure = results["exposure"]
-        assert isinstance(exposure, dict)
         forensics = results["forensics"]
-        assert isinstance(forensics, dict)
         return MissionOutcome(
             success=True,
             results={
                 "steps_planned": len(plan.steps),
                 "steps": tuple(step.name for step in plan.steps),
-                "countermeasure": countermeasure,
-                "targeting": targeting,
-                "toxicology_stats": toxicology_stats if isinstance(toxicology_stats, dict) else {},
+                "countermeasure": results["countermeasure"],
+                "targeting": results["targeting"],
+                "toxicology_stats": results["toxicology_stats"],
                 "garden_risk_combined": results["garden_risk_combined"],
-                "antidote": antidote,
-                "exposure": exposure,
+                "antidote": results["antidote"],
+                "exposure": results["exposure"],
                 "forensics_top_match": forensics.get("top_match"),
                 "forensics_recovered_dose": forensics.get("recovered_dose"),
             },

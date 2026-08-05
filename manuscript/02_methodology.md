@@ -58,9 +58,11 @@ F = 1 - prod_i (1 - f_i(d_i))
 ```
 
 The `TOXIN_CATALOG` records `{{HERACLES_NUM_TOXINS}}` botanical toxins spanning
-LD50 from {{HERACLES_MIN_LD50}} to {{HERACLES_MEDIAN_LD50}} mg/kg (median), each
-with a published-approximation value and a botanical source; the forensic
-spectral library profiles `{{HERACLES_NUM_LIBRARY}}` poisons for identification.
+LD50 from {{HERACLES_MIN_LD50}} to {{HERACLES_MAX_LD50}} mg/kg (median
+{{HERACLES_MEDIAN_LD50}}), each with a published-approximation value and a
+botanical source; `catalog_stats` reports that summary over any catalog, and
+the forensic spectral library profiles `{{HERACLES_NUM_LIBRARY}}` poisons for
+identification.
 
 ## Poison-delivery forensics (`delivery_forensics.py`)
 

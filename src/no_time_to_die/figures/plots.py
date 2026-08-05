@@ -29,6 +29,7 @@ matplotlib.use("Agg")  # headless-safe; figures never open a window
 import matplotlib.pyplot as plt
 import numpy as np
 
+from no_time_to_die import demo
 from no_time_to_die.antidote_screening import (
     ANTIDOTE_LIBRARY,
     cheng_prusoff_ic50,
@@ -83,16 +84,27 @@ def plot_delivery_kinetics(path: Path | None = None) -> Path:
     """Render one-compartment plasma concentration over time."""
     out = path or (FIGURES_DIR / "delivery_kinetics.png")
     out.parent.mkdir(parents=True, exist_ok=True)
-    times = np.linspace(0.0, 12.0, 300)
+    times = np.linspace(0.0, demo.DELIVERY_PLOT_HORIZON_H, 300)
     conc = np.array(
         [
-            plasma_concentration(100.0, absorption_rate=1.2, elimination_rate=0.4, time=float(t))
+            plasma_concentration(
+                demo.DELIVERY_PLOT_DOSE,
+                absorption_rate=demo.DEMO_ABSORPTION_RATE,
+                elimination_rate=demo.DELIVERY_PLOT_ELIMINATION_RATE,
+                time=float(t),
+            )
             for t in times
         ]
     )
     fig, ax = plt.subplots(figsize=(7, 4.5))
     ax.plot(times, conc)
-    ax.axvline(2.0, color="grey", linestyle="--", alpha=0.6, label="exposure window")
+    ax.axvline(
+        demo.DEMO_EXPOSURE_TIME,
+        color="grey",
+        linestyle="--",
+        alpha=0.6,
+        label=f"exposure window ({demo.DEMO_EXPOSURE_TIME} h)",
+    )
     ax.set_xlabel("Time (h)")
     ax.set_ylabel("Concentration (arb. units)")
     ax.set_title("HERACLES delivery kinetics (one-compartment bateman model)")
@@ -127,8 +139,6 @@ def plot_detection_confidence(path: Path | None = None) -> Path:
 
 def plot_guide_efficiency(path: Path | None = None) -> Path:
     """Render guide-efficiency vs GC content across the demo candidate guides."""
-    from no_time_to_die import demo
-
     out = path or (FIGURES_DIR / "guide_efficiency.png")
     out.parent.mkdir(parents=True, exist_ok=True)
     guides = demo.DEMO_CANDIDATES
@@ -155,7 +165,7 @@ def plot_guide_efficiency(path: Path | None = None) -> Path:
 
 def plot_antidote_response(path: Path | None = None) -> Path:
     """Render antagonized-fraction dose–response across the antidote library."""
-    from no_time_to_die import demo, toxicology
+    from no_time_to_die import toxicology
 
     toxin = toxicology.catalog_by_name("ricin")
     concs = np.logspace(-1.0, 2.0, 200)

@@ -2,7 +2,7 @@
 
 Film package for **No Time to Die** (2021) in the PROJECT BOND suite, mission
 codename **HERACLES**. A deterministic, fully-tested Python package that models
-three pharmaco-forensic concepts from the film as real mathematics with a
+the pharmaco-forensic concepts of the film as real mathematics with a
 shared provenance ledger.
 
 ## Concepts
@@ -67,17 +67,43 @@ uv run mypy src/ scripts/
   (`register_gadgets()`).
 - Discovery contract: slug `no_time_to_die` → `no_time_to_die.mission`.
 
+This surface is **frozen**: `bond-cli`, the coordinator's reconcile pass, and
+the orchestrator all consume `brief` / `recon` / `plan` / `execute` / `debrief`
+plus the gadget registry across every film package. Deepen inside the package;
+never change these names or signatures. See
+[`docs/architecture.md`](docs/architecture.md) for the phase-by-phase mapping.
+
+The `MissionProvider` phases return frozen `bond_api.protocol` dataclasses:
+
+| Phase | Returns | Content |
+| --- | --- | --- |
+| `brief()` | `MissionBrief` | one objective and one `Asset` per domain module, plus determinism/protocol `Constraint`s |
+| `recon(request)` | `ReconReport` | `Finding`s for the goal, the catalog size, and the determinism requirement |
+| `plan(brief)` | `MissionPlan` | one `Step` per domain concept, ordered by evidence dependency |
+| `execute(plan)` | `MissionOutcome` | the full `demo.run_demo()` result plus a `Provenance` record (version, seed, input hash) |
+| `debrief(outcome)` | `Debrief` | the outcome plus the standing HERACLES lessons |
+
 ## Guardrails
 
 Local-only working tree (never push, no remote). ≥90% line+branch coverage on
-`src/` enforced by `pyproject.toml`; zero mocks; deterministic computation
-(fixed `seed = 11`, no wall-clock in persisted artifacts); thin scripts; full
-type hints; `ruff` + `mypy` clean. `output/` is git-ignored (regenerable).
+`src/` enforced by `pyproject.toml` (the gate is authoritative — this README
+deliberately does not quote a coverage figure that would go stale); zero mocks;
+deterministic computation (fixed seed and inputs in
+`src/no_time_to_die/demo.py`, no wall-clock in persisted artifacts); thin
+scripts; full type hints; `ruff` + `mypy` clean. `output/` is git-ignored
+(regenerable).
 
 ## See also
 
 - [`AGENTS.md`](AGENTS.md) — technical directives for this package.
 - [`TODO.md`](TODO.md) — what was built and declared integration points.
+- [`docs/`](docs/) — the agent-facing rulebook:
+  [`agent_instructions.md`](docs/agent_instructions.md) (rules R1–R6),
+  [`architecture.md`](docs/architecture.md) (layer contract + protocol
+  mapping), [`testing_philosophy.md`](docs/testing_philosophy.md) (zero-mock
+  doctrine).
 - [`manuscript/`](manuscript/) — prose + config.
+- [`data/claim_ledger.yaml`](data/claim_ledger.yaml) — every sourced numeric
+  constant, marked measured-approximation vs synthetic.
 - `bond-api` / `bond-orchestrator` / `bond-utilities` — the BOND suite Layer
   1/3/0 building blocks this film binds to.

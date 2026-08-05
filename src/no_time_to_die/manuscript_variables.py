@@ -28,6 +28,8 @@ from no_time_to_die import (
 )
 
 __all__ = [
+    "REQUIRED_DEMO_KEYS",
+    "check_demo_completeness",
     "generate_variables",
     "load_manuscript_config",
     "resolve_manuscript_tree",
@@ -54,24 +56,84 @@ def load_manuscript_config(config_path: str | Path | None = None) -> dict[str, A
 
 
 def _fmt(value: float, digits: int = 4) -> str:
-    """Format a scaled number compactly for prose (deterministic)."""
-    if isinstance(value, int):
-        return str(value)
+    """Format a computed float compactly for prose (deterministic).
+
+    Integral counts are stringified directly at their call sites; everything
+    routed through here is a computed float, so ``%g`` is the only formatting
+    branch (it renders an integral float as ``3`` rather than ``3.0`` anyway).
+    """
     return f"{value:.{digits}g}"
+
+
+#: Demo-result keys every numeric token depends on, grouped by result section.
+#: :func:`check_demo_completeness` enforces this list, so a domain refactor that
+#: renames or drops a result key fails loudly instead of silently hydrating the
+#: manuscript with the ``0.0`` fallbacks in :func:`generate_variables`.
+REQUIRED_DEMO_KEYS: dict[str, tuple[str, ...]] = {
+    "countermeasure": (
+        "best_guide",
+        "on_target",
+        "off_target",
+        "specificity",
+        "delivered_fraction",
+        "neutralization_probability",
+    ),
+    "targeting": ("best_guide", "best_efficiency", "best_off_target_risk"),
+    "toxicology_stats": ("min_ld50", "max_ld50", "median_ld50"),
+    "antidote": ("best_antidote", "best_antagonized_fraction", "best_survival_probability"),
+    "exposure": (
+        "absorbed_dose",
+        "cumulative_exposure",
+        "margin_of_exposure",
+        "risk_quotient",
+        "verdict",
+    ),
+    "forensics": ("snr", "detection_confidence", "concentration", "recovered_dose", "top_match"),
+}
+
+
+def check_demo_completeness(results: demo.DemoResult) -> None:
+    """Assert a demo result carries every key the manuscript tokens read.
+
+    Args:
+        results: A :func:`no_time_to_die.demo.run_demo` result to validate.
+
+    Raises:
+        ValueError: naming every missing ``section.key`` pair. This is the
+            strict gate behind ``require_outputs``: it fails on a real
+            structural regression, not merely on an empty dict.
+    """
+    missing = [
+        f"{section}.{key}"
+        for section, keys in REQUIRED_DEMO_KEYS.items()
+        for key in keys
+        if key not in results[section]  # type: ignore[literal-required]
+    ]
+    if missing:
+        raise ValueError(
+            "demo result is missing manuscript-critical keys: " + ", ".join(sorted(missing))
+        )
 
 
 def generate_variables(
     *,
     config_path: str | Path | None = None,
     require_outputs: bool = True,
+    results: demo.DemoResult | None = None,
 ) -> dict[str, str]:
     """Compute the ``{{TOKEN}}`` → value mapping for the manuscript.
 
     Args:
         config_path: Override for ``manuscript/config.yaml``.
-        require_outputs: When True (default), require the deterministic demo to
-            expose a non-empty countermeasure result — the strict gate that
-            keeps metrics live rather than hand-authored.
+        require_outputs: When True (default), run :func:`check_demo_completeness`
+            over the demo result — the strict gate that keeps metrics live
+            rather than silently falling back to zeros.
+        results: Override for the demo result, so the completeness gate can be
+            exercised against a real but deliberately incomplete result.
+
+    Raises:
+        ValueError: if the config is malformed or, under ``require_outputs``,
+            the demo result is missing a manuscript-critical key.
     """
     config = load_manuscript_config(config_path)
     paper = config.get("paper", {})
@@ -82,48 +144,54 @@ def generate_variables(
     authors = config.get("authors", [])
     author_name = authors[0].get("name", "") if isinstance(authors, list) and authors else ""
 
-    results = demo.run_demo()
-    countermeasure = results["countermeasure"]
-    if not isinstance(countermeasure, dict) or not countermeasure:
-        if require_outputs:
-            raise ValueError("countermeasure demo result is empty — cannot hydrate manuscript")
-        countermeasure = {}
+    results = demo.run_demo() if results is None else results
+    if require_outputs:
+        check_demo_completeness(results)
+    cm = results["countermeasure"]
 
-    cm = countermeasure
     tox_stats = results["toxicology_stats"]
-    if not isinstance(tox_stats, dict):
-        tox_stats = {}
     targeting = results["targeting"]
-    if not isinstance(targeting, dict):
-        targeting = {}
     antidote = results["antidote"]
-    if not isinstance(antidote, dict):
-        antidote = {}
     exposure = results["exposure"]
-    if not isinstance(exposure, dict):
-        exposure = {}
     forensics = results["forensics"]
-    if not isinstance(forensics, dict):
-        forensics = {}
 
     def get_num(mapping: dict[str, Any], key: str, default: float = 0.0) -> float:
         val = mapping.get(key)
         return float(val) if isinstance(val, (int, float)) else default
 
     best_guide = str(targeting.get("best_guide") or cm.get("best_guide") or "n/a")
+    exposure_params = demo.EXPOSURE_SCENARIO
+    forensic_params = demo.FORENSIC_SCENARIO
     return {
         "HERACLES_TITLE": str(paper.get("title", "")),
         "HERACLES_SUBTITLE": str(paper.get("subtitle", "")),
         "HERACLES_VERSION": str(paper.get("version", "")),
         "HERACLES_CODENAME": str(config.get("film", {}).get("codename", "HERACLES")),
         "HERACLES_AUTHOR": author_name,
+        "HERACLES_NUM_MODULES": str(len(demo.DOMAIN_MODULES)),
         "HERACLES_NUM_TOXINS": str(len(toxicology.TOXIN_CATALOG)),
         "HERACLES_NUM_LIBRARY": str(len(delivery_forensics.SPECTRUM_LIBRARY)),
         "HERACLES_MIN_LD50": str(tox_stats.get("min_ld50", 0.0)),
+        "HERACLES_MAX_LD50": str(tox_stats.get("max_ld50", 0.0)),
         "HERACLES_MEDIAN_LD50": str(tox_stats.get("median_ld50", 0.0)),
-        "HERACLES_SPECIFICITY": _fmt(get_num(cm, "specificity", 100.0) * 100.0),
+        "HERACLES_GARDEN_RISK_PCT": _fmt(results["garden_risk_combined"] * 100.0),
+        "HERACLES_SPECIFICITY": _fmt(get_num(cm, "specificity") * 100.0),
+        "HERACLES_ON_TARGET": _fmt(get_num(cm, "on_target")),
+        "HERACLES_OFF_TARGET": _fmt(get_num(cm, "off_target")),
+        "HERACLES_DELIVERED_PCT": _fmt(get_num(cm, "delivered_fraction") * 100.0),
         "HERACLES_BEST_GUIDE": best_guide,
         "HERACLES_NUM_GUIDES": str(len(demo.DEMO_CANDIDATES)),
+        "HERACLES_GUIDE_LENGTH": str(len(best_guide)),
+        "HERACLES_REFERENCE_LENGTH": str(len(demo.DEMO_REFERENCE)),
+        "HERACLES_MAX_MISMATCHES": str(demo.DEMO_MAX_MISMATCHES),
+        "HERACLES_ABSORPTION_RATE": str(demo.DEMO_ABSORPTION_RATE),
+        "HERACLES_EXPOSURE_TIME": str(demo.DEMO_EXPOSURE_TIME),
+        "HERACLES_AVIDITY": str(demo.DEMO_AVIDITY),
+        "HERACLES_DELIVERY_HORIZON_H": str(demo.DELIVERY_PLOT_HORIZON_H),
+        "HERACLES_DELIVERY_ELIM_RATE": str(demo.DELIVERY_PLOT_ELIMINATION_RATE),
+        "HERACLES_ANTAGONIST_CONC": str(demo.ANTAGONIST_CONC),
+        "HERACLES_SEED": str(demo.DEMO_SEED),
+        "HERACLES_INPUT_HASH": demo.input_hash()[:12],
         "HERACLES_BEST_GUIDE_SCORE": _fmt(get_num(targeting, "best_efficiency", 0.0) * 100.0),
         "HERACLES_POP_OFFTARGET": _fmt(get_num(targeting, "best_off_target_risk", 0.0)),
         "HERACLES_NEUTRALIZATION": _fmt(get_num(cm, "neutralization_probability", 0.0) * 100.0),
@@ -138,8 +206,25 @@ def generate_variables(
         "HERACLES_RQ": _fmt(get_num(exposure, "risk_quotient", 0.0)),
         "HERACLES_CUMULATIVE": _fmt(get_num(exposure, "cumulative_exposure", 0.0)),
         "HERACLES_EXPOSURE_VERDICT": str(exposure.get("verdict", "n/a")),
+        "HERACLES_EXP_CONCENTRATION": str(exposure_params["concentration"]),
+        "HERACLES_EXP_CONTACT_RATE": str(exposure_params["contact_rate"]),
+        "HERACLES_EXP_DURATION": str(exposure_params["duration"]),
+        "HERACLES_EXP_ABSORBED_FRACTION": str(exposure_params["absorption_fraction"]),
+        "HERACLES_EXP_ELIMINATION_RATE": str(exposure_params["elimination_rate"]),
+        "HERACLES_EXP_NOAEL": str(exposure_params["noael"]),
+        "HERACLES_EXP_RFD": str(exposure_params["reference_dose"]),
         "HERACLES_LOD_SNR": str(delivery_forensics.DEFAULT_LOD_SNR),
+        "HERACLES_SNR": _fmt(get_num(forensics, "snr")),
+        "HERACLES_DETECTION_CONFIDENCE_PCT": _fmt(
+            get_num(forensics, "detection_confidence") * 100.0
+        ),
+        "HERACLES_CONCENTRATION": _fmt(get_num(forensics, "concentration")),
+        "HERACLES_TOP_MATCH": str(forensics.get("top_match", "n/a")),
         "HERACLES_RECOVERED_DOSE": _fmt(get_num(forensics, "recovered_dose", 0.0)),
+        "HERACLES_FOR_SIGNAL": str(forensic_params["signal"]),
+        "HERACLES_FOR_NOISE": str(forensic_params["noise_rms"]),
+        "HERACLES_FOR_VOLUME": str(forensic_params["volume_ml"]),
+        "HERACLES_FOR_TRANSFER": str(forensic_params["transfer_fraction"]),
         "PYTHON_VERSION": platform.python_version(),
         "GENERATION_TIMESTAMP": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }

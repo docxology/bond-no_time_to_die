@@ -20,6 +20,8 @@ bond-api protocol.
 
 from __future__ import annotations
 
+import math
+
 __all__ = [
     "DNA_ALPHABET",
     "compute_specificity",
@@ -139,15 +141,16 @@ def select_best_guide(
     """
     if not target_candidates:
         raise ValueError("target_candidates must not be empty")
-    best_guide: str | None = None
-    best_specificity = -1.0
-    for guide in target_candidates:
+    best_guide = target_candidates[0]
+    best_specificity = compute_specificity(
+        *count_window_matches(best_guide, reference, max_mismatches)
+    )
+    for guide in target_candidates[1:]:
         on_target, off_target = count_window_matches(guide, reference, max_mismatches)
         spec = compute_specificity(on_target, off_target)
         if spec > best_specificity:
             best_specificity = spec
             best_guide = guide
-    assert best_guide is not None
     return best_guide, best_specificity
 
 
@@ -177,8 +180,6 @@ def plasma_concentration(
         raise ValueError(
             "absorption_rate must differ from elimination_rate (degenerate bateman case)"
         )
-    import math
-
     return (
         dose
         * absorption_rate
@@ -199,8 +200,6 @@ def fraction_delivered(absorption_rate: float, exposure_time: float) -> float:
         raise ValueError("absorption_rate must be > 0")
     if exposure_time < 0:
         raise ValueError("exposure_time must be >= 0")
-    import math
-
     return 1.0 - math.exp(-absorption_rate * exposure_time)
 
 

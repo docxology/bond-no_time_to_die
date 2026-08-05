@@ -110,8 +110,9 @@ def positional_bonus(sequence: str, weights: tuple[float, ...]) -> float:
         raise ValueError(
             f"positional weights length {len(weights)} must match sequence length {len(sequence)}"
         )
-    if not weights:
-        return 0.0
+    # `weights` is necessarily non-empty here: validate_sequence rejects an
+    # empty sequence and the length check above ties the two together, so no
+    # zero-division guard is reachable.
     return sum(w for i, w in enumerate(weights) if sequence[i] in GC_SET) / len(weights)
 
 

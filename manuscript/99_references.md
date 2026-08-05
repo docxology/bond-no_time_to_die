@@ -24,3 +24,16 @@
 9. National Research Council. (1983). *Risk Assessment in the Federal
    Government: Managing the Process*. Washington, DC: National Academies
    Press.
+10. Bateman, H. (1910). Solution of a system of differential equations
+    occurring in the theory of radioactive transformations. *Proceedings of the
+    Cambridge Philosophical Society*, 15, 423–427.
+11. Gibaldi, M., & Perrier, D. (1982). *Pharmacokinetics* (2nd ed.). New York:
+    Marcel Dekker.
+12. Langmuir, I. (1918). The adsorption of gases on plane surfaces of glass,
+    mica and platinum. *Journal of the American Chemical Society*, 40(9),
+    1361–1403.
+13. Bliss, C. I. (1939). The toxicity of poisons applied jointly. *Annals of
+    Applied Biology*, 26(3), 585–615.
+14. Currie, L. A. (1968). Limits for qualitative detection and quantitative
+    determination: Application to radiochemistry. *Analytical Chemistry*,
+    40(3), 586–593.

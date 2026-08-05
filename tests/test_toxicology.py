@@ -114,10 +114,32 @@ class TestCatalog:
         assert stats["count"] == len(TOXIN_CATALOG)
         assert stats["min_ld50"] <= stats["median_ld50"] <= stats["max_ld50"]
 
-    def test_catalog_stats_even_and_odd(self) -> None:
-        # catalog is odd-length (7) -> median is a catalog value
+    def test_catalog_stats_odd_median_is_a_catalog_value(self) -> None:
+        # The shipped catalog is odd-length (7), so the median is a member value.
         stats = catalog_stats()
+        assert len(TOXIN_CATALOG) % 2 == 1
         assert stats["median_ld50"] in [t.ld50_mg_kg for t in TOXIN_CATALOG]
+
+    def test_catalog_stats_even_median_averages_the_middle_pair(self) -> None:
+        # Real two-toxin catalog: ricin 1.0, atropine 10.0 -> median 5.5.
+        pair = (catalog_by_name("ricin"), catalog_by_name("atropine"))
+        stats = catalog_stats(pair)
+        assert stats["count"] == 2.0
+        assert stats["min_ld50"] == 1.0
+        assert stats["max_ld50"] == 10.0
+        assert stats["median_ld50"] == pytest.approx(5.5)
+
+    def test_catalog_stats_even_median_four_toxins(self) -> None:
+        # Sorted LD50s 0.8, 1.0, 1.5, 10.0 -> median (1.0 + 1.5) / 2 = 1.25.
+        quad = tuple(
+            catalog_by_name(name) for name in ("ricin", "nicotine", "aconitine", "atropine")
+        )
+        stats = catalog_stats(quad)
+        assert stats["median_ld50"] == pytest.approx(1.25)
+
+    def test_catalog_stats_empty_catalog_raises(self) -> None:
+        with pytest.raises(ValueError, match="catalog must not be empty"):
+            catalog_stats(())
 
 
 class TestCombined:

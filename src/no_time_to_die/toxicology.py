@@ -18,9 +18,11 @@ the prose, are the source of truth.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TypedDict
 
 __all__ = [
     "TOXIN_CATALOG",
+    "GardenRiskProfile",
     "PlantToxin",
     "catalog_by_name",
     "catalog_stats",
@@ -30,6 +32,13 @@ __all__ = [
     "garden_risk_profile",
     "toxin_names",
 ]
+
+
+class GardenRiskProfile(TypedDict):
+    """Typed shape of :func:`garden_risk_profile`."""
+
+    per_agent_fraction: dict[str, float]
+    combined_fraction: float
 
 
 def fraction_affected(dose: float, ld50: float, hill: float) -> float:
@@ -163,12 +172,21 @@ def catalog_by_name(name: str) -> PlantToxin:
     return toxin
 
 
-def catalog_stats() -> dict[str, float]:
-    """Deterministic summary statistics over the catalog's LD50 values.
+def catalog_stats(catalog: tuple[PlantToxin, ...] | None = None) -> dict[str, float]:
+    """Deterministic summary statistics over a flora catalog's LD50 values.
 
-    Returns the count, min, max, and median of ``ld50_mg_kg`` across the flora.
+    Returns the count, min, max, and median of ``ld50_mg_kg``. ``catalog``
+    defaults to :data:`TOXIN_CATALOG`; passing an explicit catalog lets callers
+    (and the test suite) exercise both the odd- and even-length median branches
+    against real toxin data.
+
+    Raises:
+        ValueError: if the catalog is empty (an undefined median).
     """
-    lds = sorted(toxin.ld50_mg_kg for toxin in TOXIN_CATALOG)
+    source = TOXIN_CATALOG if catalog is None else catalog
+    if not source:
+        raise ValueError("catalog must not be empty")
+    lds = sorted(toxin.ld50_mg_kg for toxin in source)
     n = len(lds)
     if n % 2 == 1:
         median = float(lds[n // 2])
@@ -204,7 +222,7 @@ def combined_fraction_affected(
 
 def garden_risk_profile(
     doses_mg_kg: dict[str, float],
-) -> dict[str, object]:
+) -> GardenRiskProfile:
     """Assess a garden-wide dosing plan over the whole catalog.
 
     For each toxin name in ``doses_mg_kg``, resolve the toxin and its effect
