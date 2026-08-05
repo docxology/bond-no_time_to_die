@@ -15,10 +15,24 @@ conditions:
     objective: detect and identify a delivered poison residue
     primary_metric: recovered dose from calibration + top spectral match
     inputs: signal=9.0, noise=1.0, LOD SNR=3.0, calibration slope=2.0
+  - name: guide_design
+    objective: rank countermeasure guides by efficiency weighted by population off-target
+    primary_metric: best guide efficiency score
+    inputs: 4 candidates vs demo reference genome, max_mismatches=2
+  - name: antidote_screening
+    objective: rank competitive antagonists by restored survival vs a toxin dose
+    primary_metric: best survival probability
+    inputs: ricin dose 0.5, antagonist conc 10.0, 5-antidote library
+  - name: exposure_assessment
+    objective: assess a poison exposure pathway's absorbed dose and risk
+    primary_metric: margin of exposure + risk quotient
+    inputs: demo exposure scenario (conc, rate, duration, elim, NOAEL, RfD)
 
 figure_expectations:
   - toxicology_dose_response.png
   - delivery_kinetics.png
+  - guide_efficiency.png
+  - antidote_response.png
   - detection_confidence.png
 
 table_expectations:

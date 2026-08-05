@@ -10,7 +10,10 @@ shared provenance ledger.
 | Module | Concept | What it computes |
 | --- | --- | --- |
 | `src/no_time_to_die/bioweapon_counter.py` | DNA-targeted bioweapon countermeasure (Heracles) | guide target specificity, off-target risk, one-compartment delivery kinetics, neutralization probability |
+| `src/no_time_to_die/targeting_design.py` | Guide design & population off-target | GC/homopolymer descriptors, Doench-style efficiency, population off-target aggregation, guide ranking |
 | `src/no_time_to_die/toxicology.py` | Poison-garden toxicology (Safin's island flora) | Hill dose–response, LD50 catalog, response-addition mixtures |
+| `src/no_time_to_die/antidote_screening.py` | Competitive-antagonist pharmacology | Cheng–Prusoff IC50, Langmuir occupancy, antidote-library survival ranking |
+| `src/no_time_to_die/exposure_assessment.py` | Exposure pathway & risk assessment | absorbed dose, cumulative body burden, margin of exposure, risk quotient |
 | `src/no_time_to_die/delivery_forensics.py` | Poison delivery forensics (Vespers) | signal-to-noise, detection confidence vs LOD, concentration recovery, spectral matching |
 
 The domain core is pure and importable **without** bond-api; a thin adapter
@@ -23,7 +26,10 @@ this film by slug through bond-api discovery/registry.
 ```
 src/no_time_to_die/        pure domain core + mission adapter + token hydration
   bioweapon_counter.py     DNA-targeted countermeasure model
+  targeting_design.py      guide design & population off-target aggregation
   toxicology.py            poison-garden dose-response catalog
+  antidote_screening.py    competitive-antagonist antidote screening
+  exposure_assessment.py   exposure pathway & risk assessment
   delivery_forensics.py    vesper trace-detection forensics
   demo.py                  canonical deterministic demonstration (shared inputs)
   mission.py               MissionProvider adapter (bond-api)

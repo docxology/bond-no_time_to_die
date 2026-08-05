@@ -7,7 +7,8 @@ scripts/  (thin CLIs: brief/recon/plan/execute/debrief, z_generate_manuscript_va
    │  sys.path bootstrap + phase dispatch; no business logic
    ▼
 src/no_time_to_die/  (the package)
-   ├─ pure domain core: bioweapon_counter.py · toxicology.py · delivery_forensics.py · demo.py
+   ├─ pure domain core: bioweapon_counter.py · targeting_design.py · toxicology.py
+   │      · antidote_screening.py · exposure_assessment.py · delivery_forensics.py · demo.py
    │     (bond-api-free, infra-free, no logic-hiding I/O)
    ├─ mission.py         thin bond-api adapter — implements MissionProvider, registers gadgets
    ├─ manuscript_variables.py   reads manuscript/config.yaml + demo.py → tokens, writes output/

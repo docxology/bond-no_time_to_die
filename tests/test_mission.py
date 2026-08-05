@@ -40,9 +40,10 @@ class TestLifecycle:
     def test_brief(self) -> None:
         brief = PROVIDER.brief()
         assert brief.codename == "HERACLES"
-        assert len(brief.objectives) == 3
-        assert len(brief.assets) == 3
+        assert len(brief.objectives) == 6
+        assert len(brief.assets) == 6
         assert any(a.name == "toxicology" for a in brief.assets)
+        assert any(a.name == "targeting_design" for a in brief.assets)
 
     def test_recon(self) -> None:
         from bond_api.protocol import ReconRequest
@@ -54,13 +55,23 @@ class TestLifecycle:
     def test_plan(self) -> None:
         plan = PROVIDER.plan(PROVIDER.brief())
         names = tuple(step.name for step in plan.steps)
-        assert names == ("countermeasure", "toxicology", "forensics")
+        assert names == (
+            "countermeasure",
+            "targeting",
+            "toxicology",
+            "antidote",
+            "exposure",
+            "forensics",
+        )
 
     def test_execute_results(self) -> None:
         outcome = PROVIDER.execute(PROVIDER.plan(PROVIDER.brief()))
         assert outcome.success is True
-        assert outcome.results["steps_planned"] == 3
+        assert outcome.results["steps_planned"] == 6
         assert outcome.results["forensics_top_match"] == "ricin"
+        assert "targeting" in outcome.results
+        assert "antidote" in outcome.results
+        assert "exposure" in outcome.results
 
     def test_execute_provenance(self) -> None:
         outcome = PROVIDER.execute(PROVIDER.plan(PROVIDER.brief()))
@@ -87,7 +98,10 @@ class TestGadgets:
     def test_module_registry_populated(self) -> None:
         gadgets = GADGET_REGISTRY.gadgets_for("no_time_to_die")
         assert "bioweapon_counter" in gadgets
+        assert "targeting_design" in gadgets
         assert "toxicology" in gadgets
+        assert "antidote_screening" in gadgets
+        assert "exposure_assessment" in gadgets
         assert "delivery_forensics" in gadgets
 
     def test_register_on_fresh_registry(self) -> None:
@@ -118,3 +132,33 @@ class TestDiscovery:
         found = discover(slugs=["no_time_to_die"], search_paths=[str(_SRC)])
         assert "no_time_to_die" in found
         assert found["no_time_to_die"].film == "no_time_to_die"
+
+
+class TestPureCoreIsolation:
+    def test_pure_domain_modules_never_import_bond_api(self) -> None:
+        # The domain core must be liftable without the protocol layer; scan
+        # their sources for any bond_api reference (a guardrail, not a mock).
+        import inspect
+
+        from no_time_to_die import (
+            antidote_screening,
+            bioweapon_counter,
+            delivery_forensics,
+            demo,
+            exposure_assessment,
+            targeting_design,
+            toxicology,
+        )
+
+        modules = (
+            antidote_screening,
+            bioweapon_counter,
+            delivery_forensics,
+            demo,
+            exposure_assessment,
+            targeting_design,
+            toxicology,
+        )
+        for module in modules:
+            source = inspect.getsource(module)
+            assert "bond_api" not in source, f"{module.__name__} references bond_api"

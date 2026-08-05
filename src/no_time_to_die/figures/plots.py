@@ -1,11 +1,15 @@
 """Figure generation for the HERACLES mission (No Time to Die, 2021).
 
-Renders deterministic, publication-style plots for the three domain concepts:
+Renders deterministic, publication-style plots across the domain concepts:
 
 * :func:`plot_toxicology_dose_response` — Hill dose–response curves across the
   poison-garden flora catalog.
 * :func:`plot_delivery_kinetics` — one-compartment plasma concentration over
   time for the bioweapon delivery model.
+* :func:`plot_guide_efficiency` — guide-efficiency landscape across the design
+  candidates vs GC content.
+* :func:`plot_antidote_response` — antagonized-fraction dose–response of the
+  competitive-antagonist library.
 * :func:`plot_detection_confidence` — forensic detection confidence vs
   signal-to-noise ratio against the limit of detection.
 
@@ -25,17 +29,25 @@ matplotlib.use("Agg")  # headless-safe; figures never open a window
 import matplotlib.pyplot as plt
 import numpy as np
 
+from no_time_to_die.antidote_screening import (
+    ANTIDOTE_LIBRARY,
+    cheng_prusoff_ic50,
+    fraction_antagonized,
+)
 from no_time_to_die.bioweapon_counter import plasma_concentration
 from no_time_to_die.delivery_forensics import (
     DEFAULT_LOD_SNR,
     detection_confidence,
 )
+from no_time_to_die.targeting_design import gc_content, guide_efficiency
 from no_time_to_die.toxicology import TOXIN_CATALOG, fraction_affected
 
 __all__ = [
     "FIGURES_DIR",
+    "plot_antidote_response",
     "plot_delivery_kinetics",
     "plot_detection_confidence",
+    "plot_guide_efficiency",
     "plot_toxicology_dose_response",
     "render_all_figures",
 ]
@@ -113,10 +125,66 @@ def plot_detection_confidence(path: Path | None = None) -> Path:
     return out
 
 
+def plot_guide_efficiency(path: Path | None = None) -> Path:
+    """Render guide-efficiency vs GC content across the demo candidate guides."""
+    from no_time_to_die import demo
+
+    out = path or (FIGURES_DIR / "guide_efficiency.png")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    guides = demo.DEMO_CANDIDATES
+    efficiencies = [guide_efficiency(g) for g in guides]
+    gcs = [gc_content(g) for g in guides]
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    ax.bar(range(len(guides)), efficiencies, color="steelblue")
+    for i, (value, gc, guide) in enumerate(zip(efficiencies, gcs, guides)):
+        ax.text(
+            i, float(value) + 0.02, f"GC {gc:.2f}\n{guide}", ha="center", va="bottom", fontsize=6
+        )
+    ax.set_xticks(range(len(guides)))
+    ax.set_xticklabels([f"g{i}" for i in range(len(guides))])
+    ax.set_xlabel("Guide candidate")
+    ax.set_ylabel("Guide efficiency")
+    ax.set_ylim(0.0, 1.15)
+    ax.set_title("HERACLES guide-design efficiency (Doench-style score)")
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    return out
+
+
+def plot_antidote_response(path: Path | None = None) -> Path:
+    """Render antagonized-fraction dose–response across the antidote library."""
+    from no_time_to_die import demo, toxicology
+
+    toxin = toxicology.catalog_by_name("ricin")
+    concs = np.logspace(-1.0, 2.0, 200)
+    out = path or (FIGURES_DIR / "antidote_response.png")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    for antidote in ANTIDOTE_LIBRARY:
+        ic50 = cheng_prusoff_ic50(antidote.ki, substrate_conc=0.5, km=toxin.ld50_mg_kg)
+        curve = np.array([fraction_antagonized(float(c), ic50) for c in concs])
+        ax.plot(concs, curve, label=f"{antidote.name} (Ki {antidote.ki:g})")
+    ax.axvline(demo.ANTAGONIST_CONC, color="red", linestyle="--", alpha=0.7, label="demo dose")
+    ax.set_xscale("log")
+    ax.set_xlabel("Antagonist concentration (mg/L)")
+    ax.set_ylabel("Fraction antagonized")
+    ax.set_title("Competitive-antagonist antidote response (Cheng–Prusoff)")
+    ax.legend(fontsize=7)
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    return out
+
+
 def render_all_figures() -> tuple[Path, ...]:
     """Render every figure and return the written paths in deterministic order."""
     return (
         plot_toxicology_dose_response(),
         plot_delivery_kinetics(),
+        plot_guide_efficiency(),
+        plot_antidote_response(),
         plot_detection_confidence(),
     )

@@ -14,6 +14,14 @@ class TestFigures:
         out = plots.plot_delivery_kinetics(tmp_path / "delivery.png")
         assert out.exists() and out.stat().st_size > 0
 
+    def test_guide_efficiency_plot_written(self, tmp_path) -> None:
+        out = plots.plot_guide_efficiency(tmp_path / "guide.png")
+        assert out.exists() and out.stat().st_size > 0
+
+    def test_antidote_response_plot_written(self, tmp_path) -> None:
+        out = plots.plot_antidote_response(tmp_path / "antidote.png")
+        assert out.exists() and out.stat().st_size > 0
+
     def test_detection_confidence_plot_written(self, tmp_path) -> None:
         out = plots.plot_detection_confidence(tmp_path / "detect.png")
         assert out.exists() and out.stat().st_size > 0
@@ -21,7 +29,7 @@ class TestFigures:
     def test_render_all_figures(self, tmp_path) -> None:
         plots.FIGURES_DIR = tmp_path / "figures"  # redirect to tmp to keep tree clean
         written = plots.render_all_figures()
-        assert len(written) == 3
+        assert len(written) == 5
         for path in written:
             assert path.exists()
 

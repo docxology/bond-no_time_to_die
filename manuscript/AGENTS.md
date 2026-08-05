@@ -21,6 +21,8 @@ Figures are Pandoc-crossref-referenced and rendered by
 | --- | --- |
 | `{#fig:delivery}` | `delivery_kinetics.png` |
 | `{#fig:toxicology}` | `toxicology_dose_response.png` |
+| `{#fig:guidance}` | `guide_efficiency.png` |
+| `{#fig:antidote}` | `antidote_response.png` |
 | `{#fig:detection}` | `detection_confidence.png` |
 
 ## Files

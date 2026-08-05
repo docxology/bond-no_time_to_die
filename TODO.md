@@ -2,14 +2,21 @@
 
 Forward-only backlog for the HERACLES film package (No Time to Die, 2021).
 
-## Built (phase-2 conversion complete)
+## Built (phase-2 conversion + phase-4 deepening complete)
 
 - **Pure domain core** (`src/no_time_to_die/`, bond-api-free):
   - `bioweapon_counter.py` — DNA-targeted countermeasure: Hamming-window
     specificity, off-target risk, one-compartment bateman delivery kinetics,
     saturating neutralization probability.
+  - `targeting_design.py` — guide design & population off-target: GC/homopolymer
+    descriptors, Doench-style efficiency, exponential-decay population
+    off-target aggregation, deterministic guide ranking.
   - `toxicology.py` — poison-garden Hill dose–response, 7-entry LD50 flora
     catalog, response-addition mixtures.
+  - `antidote_screening.py` — competitive-antagonist pharmacology: Cheng–Prusoff
+    IC50, Langmuir occupancy, 5-antidote survival ranking.
+  - `exposure_assessment.py` — exposure pathway & risk: absorbed dose,
+    cumulative body burden, margin of exposure, risk quotient, verdict.
   - `delivery_forensics.py` — vesper trace detection: SNR, logistic detection
     confidence vs LOD, concentration recovery, cosine spectral matching.
   - `demo.py` — canonical deterministic demonstration shared by mission and

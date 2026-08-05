@@ -45,6 +45,15 @@ demo:
   exposure_time: 4.0
   avidity: 3.0
   lod_snr: 3.0
+  antagonist_conc: 10.0
+  exposure:
+    concentration: 0.02
+    contact_rate: 0.5
+    duration: 30.0
+    absorption_fraction: 0.2
+    elimination_rate: 0.1
+    noael: 0.5
+    reference_dose: 0.001
 
 testing:
   max_test_failures: 0

@@ -12,7 +12,7 @@ implement the REAL protocol contract — they are real providers, not mocks.
 
 ## R2 — Domain purity
 
-`src/no_time_to_die/{bioweapon_counter,toxicology,delivery_forensics,demo}.py`
+`src/no_time_to_die/{bioweapon_counter,targeting_design,toxicology,antidote_screening,exposure_assessment,delivery_forensics,demo}.py`
 must stay pure: no bond-api import, no `infrastructure.*`, no logic-hiding I/O.
 The bond-api coupling lives ONLY in `src/no_time_to_die/mission.py` (the thin
 adapter) and `manuscript_variables.py`/`figures/` (which read/write generated

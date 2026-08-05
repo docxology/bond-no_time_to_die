@@ -49,6 +49,14 @@ class TestGenerateVariables:
             "HERACLES_SPECIFICITY",
             "HERACLES_NEUTRALIZATION",
             "HERACLES_LOD_SNR",
+            "HERACLES_NUM_GUIDES",
+            "HERACLES_BEST_GUIDE_SCORE",
+            "HERACLES_POP_OFFTARGET",
+            "HERACLES_ANTIDOTE_COUNT",
+            "HERACLES_BEST_ANTIDOTE",
+            "HERACLES_SURVIVAL_PCT",
+            "HERACLES_MOE",
+            "HERACLES_EXPOSURE_VERDICT",
             "PYTHON_VERSION",
             "GENERATION_TIMESTAMP",
         ):
@@ -56,10 +64,11 @@ class TestGenerateVariables:
 
     def test_numeric_tokens_consistent_with_domain(self) -> None:
         variables = generate_variables()
-        from no_time_to_die import toxicology
+        from no_time_to_die import antidote_screening, toxicology
 
         assert variables["HERACLES_NUM_TOXINS"] == str(len(toxicology.TOXIN_CATALOG))
         assert variables["HERACLES_LOD_SNR"] == "3.0"
+        assert variables["HERACLES_ANTIDOTE_COUNT"] == str(len(antidote_screening.ANTIDOTE_LIBRARY))
 
     def test_specificity_token_format(self) -> None:
         variables = generate_variables()

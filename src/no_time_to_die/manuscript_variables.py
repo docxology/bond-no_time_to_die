@@ -20,7 +20,12 @@ from typing import Any
 
 import yaml
 
-from no_time_to_die import delivery_forensics, demo, toxicology
+from no_time_to_die import (
+    antidote_screening,
+    delivery_forensics,
+    demo,
+    toxicology,
+)
 
 __all__ = [
     "generate_variables",
@@ -88,6 +93,15 @@ def generate_variables(
     tox_stats = results["toxicology_stats"]
     if not isinstance(tox_stats, dict):
         tox_stats = {}
+    targeting = results["targeting"]
+    if not isinstance(targeting, dict):
+        targeting = {}
+    antidote = results["antidote"]
+    if not isinstance(antidote, dict):
+        antidote = {}
+    exposure = results["exposure"]
+    if not isinstance(exposure, dict):
+        exposure = {}
     forensics = results["forensics"]
     if not isinstance(forensics, dict):
         forensics = {}
@@ -96,6 +110,7 @@ def generate_variables(
         val = mapping.get(key)
         return float(val) if isinstance(val, (int, float)) else default
 
+    best_guide = str(targeting.get("best_guide") or cm.get("best_guide") or "n/a")
     return {
         "HERACLES_TITLE": str(paper.get("title", "")),
         "HERACLES_SUBTITLE": str(paper.get("subtitle", "")),
@@ -107,8 +122,22 @@ def generate_variables(
         "HERACLES_MIN_LD50": str(tox_stats.get("min_ld50", 0.0)),
         "HERACLES_MEDIAN_LD50": str(tox_stats.get("median_ld50", 0.0)),
         "HERACLES_SPECIFICITY": _fmt(get_num(cm, "specificity", 100.0) * 100.0),
-        "HERACLES_BEST_GUIDE": str(cm.get("best_guide", "n/a")),
+        "HERACLES_BEST_GUIDE": best_guide,
+        "HERACLES_NUM_GUIDES": str(len(demo.DEMO_CANDIDATES)),
+        "HERACLES_BEST_GUIDE_SCORE": _fmt(get_num(targeting, "best_efficiency", 0.0) * 100.0),
+        "HERACLES_POP_OFFTARGET": _fmt(get_num(targeting, "best_off_target_risk", 0.0)),
         "HERACLES_NEUTRALIZATION": _fmt(get_num(cm, "neutralization_probability", 0.0) * 100.0),
+        "HERACLES_ANTIDOTE_COUNT": str(len(antidote_screening.ANTIDOTE_LIBRARY)),
+        "HERACLES_BEST_ANTIDOTE": str(antidote.get("best_antidote", "n/a")),
+        "HERACLES_ANTAGONIZED_PCT": _fmt(
+            get_num(antidote, "best_antagonized_fraction", 0.0) * 100.0
+        ),
+        "HERACLES_SURVIVAL_PCT": _fmt(get_num(antidote, "best_survival_probability", 0.0) * 100.0),
+        "HERACLES_ABSORBED_DOSE": _fmt(get_num(exposure, "absorbed_dose", 0.0)),
+        "HERACLES_MOE": _fmt(get_num(exposure, "margin_of_exposure", 0.0)),
+        "HERACLES_RQ": _fmt(get_num(exposure, "risk_quotient", 0.0)),
+        "HERACLES_CUMULATIVE": _fmt(get_num(exposure, "cumulative_exposure", 0.0)),
+        "HERACLES_EXPOSURE_VERDICT": str(exposure.get("verdict", "n/a")),
         "HERACLES_LOD_SNR": str(delivery_forensics.DEFAULT_LOD_SNR),
         "HERACLES_RECOVERED_DOSE": _fmt(get_num(forensics, "recovered_dose", 0.0)),
         "PYTHON_VERSION": platform.python_version(),

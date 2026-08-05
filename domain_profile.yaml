@@ -22,6 +22,8 @@ artifact_expectations:
   figures:
     - output/figures/delivery_kinetics.png
     - output/figures/toxicology_dose_response.png
+    - output/figures/guide_efficiency.png
+    - output/figures/antidote_response.png
     - output/figures/detection_confidence.png
   data:
     - output/data/manuscript_variables.json

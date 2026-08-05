@@ -1,7 +1,9 @@
 """HERACLES — the no_time_to_die film mission (No Time to Die, 2021).
 
 This is the thin adapter between the package's pure domain core
-(:mod:`no_time_to_die.bioweapon_counter`, :mod:`no_time_to_die.toxicology`,
+(:mod:`no_time_to_die.bioweapon_counter`, :mod:`no_time_to_die.targeting_design`,
+:mod:`no_time_to_die.toxicology`, :mod:`no_time_to_die.antidote_screening`,
+:mod:`no_time_to_die.exposure_assessment`,
 :mod:`no_time_to_die.delivery_forensics`) and the frozen bond-api mission
 protocol. It implements :class:`~bond_api.protocol.MissionProvider` so the
 orchestrator can discover and drive this film purely through
@@ -34,7 +36,16 @@ from bond_api.protocol import (  # type: ignore[import-untyped]
 )
 from bond_api.registry import GadgetRegistry  # type: ignore[import-untyped]
 
-from no_time_to_die import __version__, bioweapon_counter, delivery_forensics, demo, toxicology
+from no_time_to_die import (
+    __version__,
+    antidote_screening,
+    bioweapon_counter,
+    delivery_forensics,
+    demo,
+    exposure_assessment,
+    targeting_design,
+    toxicology,
+)
 
 __all__ = [
     "CODENAME",
@@ -56,14 +67,17 @@ def register_gadgets(registry: GadgetRegistry | None = None) -> GadgetRegistry:
 
     Uses :data:`GADGET_REGISTRY` unless an explicit ``registry`` is supplied —
     coordinators pass their own :class:`bond_api.registry.GadgetRegistry`. The
-    gadget payloads are the three pure domain modules. Returns the registry.
+    gadget payloads are the pure domain modules. Returns the registry.
     """
     target = GADGET_REGISTRY if registry is None else registry
     target.register(
         "no_time_to_die",
         {
             "bioweapon_counter": bioweapon_counter,
+            "targeting_design": targeting_design,
             "toxicology": toxicology,
+            "antidote_screening": antidote_screening,
+            "exposure_assessment": exposure_assessment,
             "delivery_forensics": delivery_forensics,
         },
     )
@@ -76,18 +90,28 @@ class MissionProvider:
     film = "no_time_to_die"
 
     def brief(self) -> MissionBrief:
-        """Declare the HERACLES mission: three pharmaco-forensic objectives."""
+        """Declare the HERACLES mission: six pharmaco-forensic objectives."""
         return MissionBrief(
             film=self.film,
             codename=CODENAME,
             objectives=(
                 "assess DNA-targeted bioweapon countermeasure specificity and delivery",
+                "design and rank the countermeasure guide across a population",
                 "characterize poison-garden dose-response toxicology",
+                "screen competitive-antagonist antidotes against a toxin dose",
+                "assess poison exposure pathways and cumulative risk",
                 "run vesper poison-delivery trace detection forensics",
             ),
             assets=(
                 Asset(kind="module", name="bioweapon_counter", payload=demo.DEMO_REFERENCE),
+                Asset(kind="module", name="targeting_design", payload=demo.DEMO_CANDIDATES),
                 Asset(kind="module", name="toxicology", payload=len(toxicology.TOXIN_CATALOG)),
+                Asset(
+                    kind="module",
+                    name="antidote_screening",
+                    payload=len(antidote_screening.ANTIDOTE_LIBRARY),
+                ),
+                Asset(kind="module", name="exposure_assessment", payload=demo.EXPOSURE_SCENARIO),
                 Asset(kind="module", name="delivery_forensics", payload=CODENAME),
             ),
             constraints=(
@@ -121,9 +145,27 @@ class MissionProvider:
                     params={"objectives": len(brief.objectives)},
                 ),
                 Step(
+                    name="targeting",
+                    action="rank_guides",
+                    params={
+                        "candidates": len(demo.DEMO_CANDIDATES),
+                        "max_mismatches": demo.DEMO_MAX_MISMATCHES,
+                    },
+                ),
+                Step(
                     name="toxicology",
                     action="catalog_dose_response",
                     params={"flora": len(toxicology.TOXIN_CATALOG)},
+                ),
+                Step(
+                    name="antidote",
+                    action="screen_antagonists",
+                    params={"antidotes": len(antidote_screening.ANTIDOTE_LIBRARY)},
+                ),
+                Step(
+                    name="exposure",
+                    action="assess_pathway",
+                    params={"duration": demo.EXPOSURE_SCENARIO["duration"]},
                 ),
                 Step(
                     name="forensics",
@@ -138,7 +180,13 @@ class MissionProvider:
         results = demo.run_demo()
         countermeasure = results["countermeasure"]
         assert isinstance(countermeasure, dict)
+        targeting = results["targeting"]
+        assert isinstance(targeting, dict)
         toxicology_stats = results["toxicology_stats"]
+        antidote = results["antidote"]
+        assert isinstance(antidote, dict)
+        exposure = results["exposure"]
+        assert isinstance(exposure, dict)
         forensics = results["forensics"]
         assert isinstance(forensics, dict)
         return MissionOutcome(
@@ -147,8 +195,11 @@ class MissionProvider:
                 "steps_planned": len(plan.steps),
                 "steps": tuple(step.name for step in plan.steps),
                 "countermeasure": countermeasure,
+                "targeting": targeting,
                 "toxicology_stats": toxicology_stats if isinstance(toxicology_stats, dict) else {},
                 "garden_risk_combined": results["garden_risk_combined"],
+                "antidote": antidote,
+                "exposure": exposure,
                 "forensics_top_match": forensics.get("top_match"),
                 "forensics_recovered_dose": forensics.get("recovered_dose"),
             },

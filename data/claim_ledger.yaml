@@ -44,3 +44,26 @@ claims:
     value: "periodic 64-nt ACGT string"
     source: "Synthetic deterministic input (src/no_time_to_die/demo.py)"
     synthetic: true
+  - id: guide_design_params
+    value: "ideal GC 0.5, GC penalty 1.0, homopolymer penalty 0.05, mismatch decay 0.5"
+    source: "Model parameters (src/no_time_to_die/targeting_design.py), Doench-style (Doench 2014)"
+    synthetic: true
+  - id: ki_naloxone
+    value_mg_per_l: 0.4
+    source: "Published approximation, naloxone Ki (antidote library)"
+  - id: ki_flumazenil
+    value_mg_per_l: 1.0
+    source: "Published approximation, flumazenil Ki"
+  - id: ki_pralidoxime
+    value_mg_per_l: 2.0
+    source: "Published approximation, pralidoxime Ki"
+  - id: ki_acetylcysteine
+    value_mg_per_l: 0.8
+    source: "Published approximation, acetylcysteine Ki"
+  - id: ki_vitamin_k
+    value_mg_per_l: 5.0
+    source: "Published approximation, vitamin K Ki"
+  - id: exposure_scenario
+    value: "conc 0.02, rate 0.5, duration 30, absorbed frac 0.2, elim 0.1, NOAEL 0.5, RfD 0.001"
+    source: "Synthetic deterministic exposure scenario (src/no_time_to_die/demo.py)"
+    synthetic: true

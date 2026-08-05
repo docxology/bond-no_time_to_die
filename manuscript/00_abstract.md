@@ -15,7 +15,12 @@ with published-approximation LD50 values and Hill slopes, spanning
 {{HERACLES_MIN_LD50}} to {{HERACLES_MEDIAN_LD50}} mg/kg across the median. The
 HERACLES countermeasure demonstration selects a target guide that attains
 {{HERACLES_SPECIFICITY}}% specificity and a combined neutralization
-probability of {{HERACLES_NEUTRALIZATION}}%. Forensic trace detection clears a
+probability of {{HERACLES_NEUTRALIZATION}}%. Guide design ranks
+{{HERACLES_NUM_GUIDES}} candidates by a Doench-style efficiency blended with
+population off-target burden; a competitive-antagonist screen restores
+{{HERACLES_SURVIVAL_PCT}}% survival against a ricin dose; and the delivered
+exposure carries a margin of exposure of {{HERACLES_MOE}} (risk quotient
+{{HERACLES_RQ}}). Forensic trace detection clears a
 limit-of-detection signal-to-noise ratio of {{HERACLES_LOD_SNR}}, recovering a
 dosable residue from the glass.
 

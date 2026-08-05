@@ -6,7 +6,10 @@ surfaces:
   - name: pure_domain
     files:
       - src/no_time_to_die/bioweapon_counter.py
+      - src/no_time_to_die/targeting_design.py
       - src/no_time_to_die/toxicology.py
+      - src/no_time_to_die/antidote_screening.py
+      - src/no_time_to_die/exposure_assessment.py
       - src/no_time_to_die/delivery_forensics.py
       - src/no_time_to_die/demo.py
     rule: "No bond-api, no infra, no logic-hiding I/O"

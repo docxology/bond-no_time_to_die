@@ -24,7 +24,7 @@ package: **No Time to Die (2021)**, mission codename **HERACLES**.
 
 | Surface | Rule |
 | --- | --- |
-| `src/no_time_to_die/{bioweapon_counter,toxicology,delivery_forensics,demo}.py` | Pure domain core — no bond-api, no infra, no logic-hiding I/O |
+| `src/no_time_to_die/{bioweapon_counter,targeting_design,toxicology,antidote_screening,exposure_assessment,delivery_forensics,demo}.py` | Pure domain core — no bond-api, no infra, no logic-hiding I/O |
 | `src/no_time_to_die/figures/plots.py` | Deterministic figure rendering to `output/figures/` |
 | `src/no_time_to_die/mission.py` | Thin adapter — imports bond-api protocol + registry; implements `MissionProvider` |
 | `src/no_time_to_die/manuscript_variables.py` | Token hydration from config + demo |

@@ -78,3 +78,54 @@ Concentration is back-computed from a linear calibration `S = m·C + b`
 residue spectrum is identified by cosine similarity against the reference
 library (`match_unknown`). The demonstration operates at a
 limit-of-detection SNR of `{{HERACLES_LOD_SNR}}`.
+
+## Guide design and population off-target (`targeting_design.py`)
+
+The countermeasure guide is not given — it is *designed*. `gc_content` and
+`longest_homopolymer` are base sequence descriptors; `guide_efficiency`
+combines a GC-content sweet-spot penalty, a homopolymer-run penalty, and an
+optional position-dependent nucleotide bonus into a Doench-style activity
+score in `[0, 1]` (spirit of Doench et al. 2014).
+
+Off-target burden is assessed *across a population* of reference genomes:
+
+```
+off_target_risk = sum_{genomes} sum_{windows, 1<=d<=k} exp(-lambda * d)
+```
+
+where `d` is the Hamming distance of a mismatched window and `lambda` the
+mismatch decay (`population_off_target_risk`). `rank_guides` scores each
+candidate as `efficiency * (1 - min(1, off_target_risk))` and `design_report`
+returns the ranked table plus the best guide. The demonstration ranks
+`{{HERACLES_NUM_GUIDES}}` candidates against the reference genome.
+
+## Antidote screening (`antidote_screening.py`)
+
+A poison-garden toxin is acted on through a receptor; a competitive
+antagonist counteracts it. The apparent IC50 of a competitive antagonist
+follows Cheng–Prusoff (1973):
+
+```
+IC50_app = Ki * (1 + [S] / Km)
+```
+
+with the toxin dose `[S]` and its LD50 standing in as the affinity proxy
+`Km`. The fraction of receptors occupied is the Langmuir isotherm
+`[A] / ([A] + IC50_app)` (`fraction_antagonized`). `screen_antidotes` ranks a
+library of `{{HERACLES_ANTIDOTE_COUNT}}` antagonists by the survival they
+restore against a toxin dose:
+
+```
+residual = f_tox * (1 - f_antag);  survival = 1 - residual
+```
+
+## Exposure assessment (`exposure_assessment.py`)
+
+The hazard of a delivered poison is set by the absorbed dose, not the residue.
+`absorbed_dose = concentration * contact_rate * duration * absorption_fraction`
+models intake through an exposure pathway; `cumulative_exposure` accumulates
+body burden under first-order elimination
+`(intake_rate / k_e) * (1 - exp(-k_e t))`; `margin_of_exposure` computes
+`NOAEL / absorbed` (NRC 1983 framing) and `risk_quotient` computes
+`absorbed / reference_dose`. `exposure_scenario_report` composes these into a
+single verdict (acceptable vs elevated risk).
