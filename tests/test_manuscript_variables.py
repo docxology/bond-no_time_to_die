@@ -84,6 +84,38 @@ class TestGenerateVariables:
         spec = float(variables["HERACLES_SPECIFICITY"])
         assert 0.0 <= spec <= 100.0
 
+    def test_missing_mixture_yields_fallback_tokens(self) -> None:
+        """If the demo result has no mixture decomposition (or a future one
+        drops it), the mix tokens degrade to their documented fallbacks rather
+        than crashing -- and the gate names the dropped key when on."""
+        results = demo.run_demo()
+        del results["forensics"]["mixture"]  # type: ignore[literal-required]
+        variables = generate_variables(results=results, require_outputs=False)
+        assert variables["HERACLES_MIX"] == "n/a"
+        assert variables["HERACLES_MIX_PRIMARY_PCT"] == "0"
+        assert variables["HERACLES_MIX_SECONDARY"] == "n/a"
+        assert variables["HERACLES_MIX_SECONDARY_PCT"] == "0"
+        assert variables["HERACLES_MIX_RESIDUAL"] == "0"
+        with pytest.raises(ValueError, match=re.escape("forensics.mixture")):
+            generate_variables(results=results, require_outputs=True)
+
+    def test_single_component_mixture_tokens(self) -> None:
+        """A pure single-poison mixture has no secondary: the token reads
+        ``none`` and the secondary weight stays ``0``."""
+        results = demo.run_demo()
+        results["forensics"]["mixture"] = {
+            "primary": "ricin",
+            "primary_weight": 1.0,
+            "secondary": None,
+            "secondary_weight": None,
+            "residual": 0.0,
+            "num_components": 1,
+        }
+        variables = generate_variables(results=results, require_outputs=False)
+        assert variables["HERACLES_MIX_SECONDARY"] == "none"
+        assert variables["HERACLES_MIX_SECONDARY_PCT"] == "0"
+        assert variables["HERACLES_MIX_PRIMARY_PCT"] != "0"
+
 
 class TestProseCrossReference:
     def test_every_prose_token_is_generated(self) -> None:

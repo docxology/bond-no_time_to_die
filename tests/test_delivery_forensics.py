@@ -7,10 +7,13 @@ import pytest
 from no_time_to_die import demo
 from no_time_to_die.delivery_forensics import (
     DEFAULT_LOD_SNR,
+    SPECTRUM_LIBRARY,
     cosine_similarity,
+    decompose_mixture,
     detection_confidence,
     estimate_concentration,
     match_unknown,
+    mixture_analysis,
     recovered_dose,
     signal_to_noise,
     vesper_trace_report,
@@ -139,6 +142,87 @@ class TestMatchUnknown:
         custom = {"a": (1.0, 0.0)}
         assert match_unknown((1.0, 0.0), library=custom)[0][0] == "a"
 
+    def test_heterogeneous_length_library_raises_all_or_nothing(self) -> None:
+        """Matching is all-or-nothing: a library containing any
+        length-incompatible spectrum raises rather than ranking the compatible
+        subset. With one compatible (2-bin) entry and one incompatible
+        (4-bin), no partial ranking may be returned.
+        """
+        mixed = {"compatible": (1.0, 0.0), "four_bin": (1.0, 0.0, 0.0, 0.0)}
+        with pytest.raises(ValueError):
+            match_unknown((1.0, 0.0), library=mixed)
+
+
+class TestDecomposeMixture:
+    def test_synthesized_60_40_blend_recovers_the_pair(self) -> None:
+        # FORENSIC_MIXTURE is the 60/40 ricin + atropine blend.
+        decomp = decompose_mixture(demo.FORENSIC_MIXTURE)
+        weights = dict(decomp)
+        assert len(decomp) == 2
+        assert weights["ricin"] == pytest.approx(0.6, abs=1e-3)
+        assert weights["atropine"] == pytest.approx(0.4, abs=1e-3)
+
+    def test_pure_single_poison_is_reported_as_one(self) -> None:
+        assert decompose_mixture(SPECTRUM_LIBRARY["ricin"]) == (("ricin", 1.0),)
+
+    def test_empty_library_empty_result(self) -> None:
+        assert decompose_mixture((1.0, 0.0), library={}) == ()
+
+    def test_zero_vector_raises(self) -> None:
+        with pytest.raises(ValueError):
+            decompose_mixture((0.0, 0.0))
+
+    def test_empty_unknown_raises(self) -> None:
+        with pytest.raises(ValueError):
+            decompose_mixture(())
+
+    def test_heterogeneous_length_library_raises(self) -> None:
+        with pytest.raises(ValueError):
+            decompose_mixture((1.0, 0.0), library={"a": (1.0, 0.0), "b": (1.0, 0.0, 0.0)})
+
+    def test_exercises_the_negative_weight_clip_branch(self) -> None:
+        # Unconstrained two-var fit wants a negative weight on b; the fit must
+        # clip it and fall back to the positive single component.
+        custom = {"a": (1.0, 2.0), "b": (2.0, 1.0)}
+        decomp = decompose_mixture((1.0, 3.0), library=custom)
+        assert dict(decomp) == {"a": pytest.approx(1.0)}
+        assert all(w >= 0 for _, w in decomp)
+
+    def test_exercises_the_collinear_branch(self) -> None:
+        custom = {"a": (1.0, 0.5), "b": (2.0, 1.0)}  # b == 2*a
+        decomp = decompose_mixture((3.0, 1.5), library=custom)
+        assert all(w >= 0 for _, w in decomp)
+        assert sum(w for _, w in decomp) == pytest.approx(1.0)
+
+    def test_unexplainable_spectrum_yields_no_fit(self) -> None:
+        """A spectrum orthogonal to every library entry has zero weight on
+        every candidate; the decomposition reports no components rather than
+        forcing a meaningless blend."""
+        decomp = decompose_mixture((0.0, 1.0), library={"a": (1.0, 0.0)})
+        assert decomp == ()
+        with pytest.raises(ValueError):
+            decompose_mixture((1.0, 0.0), library={"a": (1.0,), "b": (1.0, 1.0)})
+
+
+class TestMixtureAnalysis:
+    def test_report_shape_on_the_demo_blend(self) -> None:
+        report = mixture_analysis(demo.FORENSIC_MIXTURE)
+        assert report["num_components"] == 2
+        assert report["primary"] == "ricin"
+        assert report["secondary"] == "atropine"
+        assert isinstance(report["residual"], float)
+        assert report["primary_weight"] == pytest.approx(0.6, abs=1e-3)
+        assert report["secondary_weight"] == pytest.approx(0.4, abs=1e-3)
+
+    def test_single_component_has_no_secondary(self) -> None:
+        report = mixture_analysis(SPECTRUM_LIBRARY["ricin"])
+        assert report["num_components"] == 1
+        assert report["secondary"] is None
+
+    def test_mismatched_length_library_raises_all_or_nothing(self) -> None:
+        with pytest.raises(ValueError):
+            mixture_analysis((1.0, 0.0), library={"a": (1.0,)})
+
 
 class TestVesperTraceReport:
     def test_full_report(self) -> None:
@@ -165,3 +249,16 @@ class TestVesperTraceReport:
             unknown_spectrum=(1.0, 0.2, 0.1, 0.05, 0.02),
         )
         assert report["top_match"] == "ricin"
+
+    def test_with_mixture(self) -> None:
+        report = vesper_trace_report(
+            signal=9.0,
+            noise_rms=1.0,
+            volume_ml=0.5,
+            transfer_fraction=0.1,
+            calibration_slope=2.0,
+            calibration_intercept=0.5,
+            mixture_spectrum=demo.FORENSIC_MIXTURE,
+        )
+        assert report["mixture"]["primary"] == "ricin"
+        assert report["mixture"]["num_components"] == 2

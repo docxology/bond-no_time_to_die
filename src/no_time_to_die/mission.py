@@ -105,9 +105,7 @@ class MissionProvider:
                 Asset(kind="module", name="delivery_forensics", payload=CODENAME),
             ),
             constraints=(
-                Constraint(
-                    kind="determinism", detail="fixed seed, no random draws, no external calls"
-                ),
+                Constraint(kind="determinism", detail="no clock, no RNG, no external calls"),
                 Constraint(kind="protocol", detail="frozen bond-api types only"),
             ),
         )

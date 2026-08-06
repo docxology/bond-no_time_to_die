@@ -35,6 +35,7 @@ __all__ = [
     "DEMO_SEED",
     "DOMAIN_MODULES",
     "EXPOSURE_SCENARIO",
+    "FORENSIC_MIXTURE",
     "FORENSIC_SCENARIO",
     "FORENSIC_UNKNOWN_SPECTRUM",
     "GARDEN_DOSES",
@@ -182,6 +183,14 @@ FORENSIC_SCENARIO: dict[str, float] = {
 #: Unknown residue spectrum recovered from the glass (5-bin relative response).
 FORENSIC_UNKNOWN_SPECTRUM: tuple[float, ...] = (0.98, 0.25, 0.12, 0.06, 0.03)
 
+#: A deliberately *blended* residue for the mixture-decomposition forensics:
+#: a 60/40 mixture of the ricin and atropine fingerprints
+#: (``delivery_forensics.SPECTRUM_LIBRARY``). A single-poison cosine match
+#: would grade this as a mediocre ricin; ``decompose_mixture`` should recover
+#: the ~0.6/0.4 split instead. Written as a literal (not computed from the
+#: fingerprints) so the claim-ledger equality check is exact.
+FORENSIC_MIXTURE: tuple[float, ...] = (0.72, 0.4, 0.22, 0.11, 0.372)
+
 #: Delivery-kinetics figure parameters. These live here rather than inside
 #: ``figures/plots.py`` so the rendered curve, its exposure-window marker, and
 #: the manuscript caption all read the same constants — the figure previously
@@ -232,6 +241,7 @@ def input_payload() -> str:
         "exposure_scenario=" + ",".join(f"{k}={v}" for k, v in sorted(EXPOSURE_SCENARIO.items())),
         "forensic_scenario=" + ",".join(f"{k}={v}" for k, v in sorted(FORENSIC_SCENARIO.items())),
         "forensic_unknown_spectrum=" + ",".join(str(v) for v in FORENSIC_UNKNOWN_SPECTRUM),
+        "forensic_mixture=" + ",".join(str(v) for v in FORENSIC_MIXTURE),
     ]
     return "|".join(parts)
 
@@ -270,6 +280,7 @@ def run_demo() -> DemoResult:
         calibration_slope=FORENSIC_SCENARIO["calibration_slope"],
         calibration_intercept=FORENSIC_SCENARIO["calibration_intercept"],
         unknown_spectrum=FORENSIC_UNKNOWN_SPECTRUM,
+        mixture_spectrum=FORENSIC_MIXTURE,
     )
     return {
         "countermeasure": countermeasure,

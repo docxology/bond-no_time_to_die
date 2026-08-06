@@ -18,10 +18,13 @@ may import ``bond_api``, and no module may import ``infrastructure``.
 from __future__ import annotations
 
 import ast
+import importlib
+import re
 from pathlib import Path
 
 _PKG = Path(__file__).resolve().parents[1]
 _SRC = _PKG / "src" / "no_time_to_die"
+_DOC = _PKG / "docs" / "architecture.md"
 
 #: Every intra-package import edge, as documented in docs/architecture.md.
 #: ``(importer, imported)`` by module stem.
@@ -197,3 +200,69 @@ class TestGraphGateCanFail:
         clean = tmp_path / "toxicology.py"
         clean.write_text("import math\n\nX = math.pi\n", encoding="utf-8")
         assert import_edges_of(clean) == set()
+
+
+def _inventory_rows(text: str) -> list[tuple[str, list[str]]]:
+    """Parse ``(module_stem, backticked_identifiers)`` out of the
+    ``## The domain modules, individually`` table in ``docs/architecture.md``.
+    """
+    rows: list[tuple[str, list[str]]] = []
+    in_block = False
+    for line in text.splitlines():
+        if line.strip().startswith("## The domain modules"):
+            in_block = True
+            continue
+        if in_block and line.strip().startswith("The intra-package dependency"):
+            break
+        if not in_block:
+            continue
+        m = re.match(r"\|\s*`([A-Za-z_][A-Za-z0-9_]*\.py)`\s*\|\s*(.*)\s*\|", line)
+        if not m:
+            continue
+        stem = m.group(1)[:-3]
+        ids = re.findall(r"`([A-Za-z_][A-Za-z0-9_]*)`", m.group(2))
+        rows.append((stem, ids))
+    return rows
+
+
+class TestInventoryBinding:
+    """Bind the per-module function/constant inventory in the table at
+    ``docs/architecture.md:28-36`` to the code. Renaming or deleting any public
+    identifier named there must fail here, so the table cannot silently drift —
+    the exact doc-vs-code drift class the Phase-6 audit hunted.
+
+    The module *name* in each row is trusted (rows are keyed by module); every
+    backticked identifier inside a row must resolve on that module.
+    """
+
+    def test_every_inventory_identifier_resolves_on_its_module(self) -> None:
+        rows = _inventory_rows(_DOC.read_text(encoding="utf-8"))
+        assert rows, "no inventory rows parsed; the table may have moved"
+        for stem, identifiers in rows:
+            module = importlib.import_module(f"no_time_to_die.{stem}")
+            for identifier in identifiers:
+                assert hasattr(module, identifier), (
+                    f"{stem}.{identifier} is in docs/architecture.md but not on "
+                    f"no_time_to_die.{stem}"
+                )
+
+    def test_the_inventory_is_not_vacuous(self) -> None:
+        assert len(_inventory_rows(_DOC.read_text(encoding="utf-8"))) >= 6
+
+    def test_parse_detects_a_fabricated_identifier(self, tmp_path) -> None:
+        """Positive control: the parser sees identifiers verbatim, so an
+        injected non-existent name would be caught by the resolution test.
+        """
+        broken = tmp_path / "architecture.md"
+        broken.write_text(
+            "## The domain modules, individually\n\n"
+            "| `toxicology.py` | `fraction_affected`, `not_a_real_function` |\n\n"
+            "The intra-package dependency graph\n",
+            encoding="utf-8",
+        )
+        stem, identifiers = _inventory_rows(broken.read_text(encoding="utf-8"))[0]
+        assert (stem, identifiers) == ("toxicology", ["fraction_affected", "not_a_real_function"])
+        # ... and the resolution assertion on the real module would catch it.
+        module = importlib.import_module(f"no_time_to_die.{stem}")
+        assert hasattr(module, "fraction_affected")
+        assert not hasattr(module, "not_a_real_function")

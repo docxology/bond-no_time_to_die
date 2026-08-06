@@ -159,3 +159,20 @@ class TestScreenReport:
         assert 0.0 <= survival <= 1.0
         ranked = report["ranked"]
         assert isinstance(ranked, tuple)
+        # The challenge therapeutic window and margin of safety are live now.
+        assert report["challenge_therapeutic_window"] == pytest.approx(
+            1.0 / 0.5
+        )  # LD50 1.0 / dose 0.5
+        assert report["challenge_margin_of_safety"] == pytest.approx(1.0 / 0.5 - 1.0)
+
+    def test_report_challenge_window_uses_toxin_ld50(self) -> None:
+        # Atoxin with LD50 10.0 vs the same 0.5 dose -> window 20.
+        atropine = catalog_by_name("atropine")
+        report = screen_report(atropine, dose=0.5, antagonist_conc=10.0)
+        assert report["challenge_therapeutic_window"] == pytest.approx(20.0)
+
+    def test_report_zero_dose_window_is_none(self) -> None:
+        ricin = catalog_by_name("ricin")
+        report = screen_report(ricin, dose=0.0, antagonist_conc=10.0)
+        assert report["challenge_therapeutic_window"] is None
+        assert report["challenge_margin_of_safety"] is None

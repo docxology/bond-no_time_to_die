@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -63,6 +64,21 @@ class TestManuscriptGeneratorScript:
         assert "rendered figure" in proc.stdout
         json_path = PROJECT_ROOT / "output" / "data" / "manuscript_variables.json"
         assert json_path.is_file()
+
+    def test_execute_writes_a_byte_identical_mission_record(self) -> None:
+        """``scripts/execute.py`` persists a mission record whose provisional
+        stamps are pinned, so two runs on one interpreter write identical
+        bytes and the record's own provenance verifies.
+        """
+        rec = PROJECT_ROOT / "output" / "data" / "mission_record.json"
+        assert _run(str(SCRIPTS / "execute.py")).returncode == 0
+        first = rec.read_bytes()
+        assert _run(str(SCRIPTS / "execute.py")).returncode == 0
+        assert rec.read_bytes() == first, "mission record differs across runs"
+
+        from bond_utilities.mission_io import verify_provenance
+
+        assert verify_provenance(json.loads(first.decode("utf-8")))
 
     def test_strict_mode_resolves_the_whole_manuscript(self) -> None:
         """The default (strict) path must succeed, not just ``--allow-draft``."""

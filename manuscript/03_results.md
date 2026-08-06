@@ -87,7 +87,11 @@ Against a ricin dose at an antagonist concentration of
 library is ranked by restored survival. The best antidote is
 **{{HERACLES_BEST_ANTIDOTE}}**, restoring a survival probability of
 **{{HERACLES_SURVIVAL_PCT}}%** by antagonizing **{{HERACLES_ANTAGONIZED_PCT}}%**
-of the toxin's receptor occupancy.
+of the toxin's receptor occupancy. The *challenge* is put in context by the
+therapeutic window — the toxin LD50 sits **{{HERACLES_WINDOW}}** times above the
+administered dose, a margin of safety of **{{HERACLES_MARGIN}}** — so the dose the
+screen confronts is comfortably below the population-lethal level (see
+[Scope](#scope-and-related-work) for what this ratio is and is not).
 
 This ranking is a property of the arithmetic, not of pharmacology. Every `Ki`
 in the library is invented (see [Scope](#scope-and-related-work)); three of the
@@ -131,3 +135,17 @@ in [Figure @fig:detection].
 
 ![Vesper trace detection confidence vs signal-to-noise against the
 limit of detection.](../output/figures/detection_confidence.png){#fig:detection}
+
+### Mixture decomposition
+
+A residue that is a *blend* of two garden poisons grades as a mediocre single
+match under cosine similarity, which is what a blend really is. When the
+recovered spectrum is the demonstration's **{{HERACLES_MIX}}** +
+{{HERACLES_MIX_SECONDARY}} mix, `decompose_mixture` recovers the
+non-negative mixing fractions by least squares over 1- and 2-component
+candidates: a primary **{{HERACLES_MIX_PRIMARY_PCT}}%** + secondary
+**{{HERACLES_MIX_SECONDARY_PCT}}%** split with a squared residual of
+**{{HERACLES_MIX_RESIDUAL}}** (see [Methodology](#methodology)). The
+decomposition is a *model*, not an instrument read: it recovers the planted
+blend because the blend was put there, exactly as the specificity and guide
+results recover planted structure (see [Scope](#scope-and-related-work)).

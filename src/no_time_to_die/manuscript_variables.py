@@ -65,6 +65,40 @@ def _fmt(value: float, digits: int = 4) -> str:
     return f"{value:.{digits}g}"
 
 
+def _mix_primary(mixture: object) -> str:
+    """Primary component name from a ``forensics['mixture']`` dict (or ``n/a``)."""
+    if isinstance(mixture, dict):
+        return str(mixture.get("primary") or "n/a")
+    return "n/a"
+
+
+def _mix_secondary(mixture: object) -> str:
+    """Secondary component name; ``none`` for a pure single-poison fit."""
+    if isinstance(mixture, dict):
+        secondary = mixture.get("secondary")
+        return "none" if secondary is None else str(secondary)
+    return "n/a"
+
+
+def _mix_weight(mixture: object, key: str) -> str:
+    """A component mixing weight as a percentage, guarded against a missing
+    result or a non-numeric value."""
+    if isinstance(mixture, dict):
+        value = mixture.get(key)
+        if isinstance(value, (int, float)):
+            return _fmt(value * 100.0)
+    return "0"
+
+
+def _mix_residual(mixture: object) -> str:
+    """The fit's squared residual, guarded like :func:`_mix_weight`."""
+    if isinstance(mixture, dict):
+        value = mixture.get("residual")
+        if isinstance(value, (int, float)):
+            return _fmt(value)
+    return "0"
+
+
 #: Demo-result keys every numeric token depends on, grouped by result section.
 #: :func:`check_demo_completeness` enforces this list, so a domain refactor that
 #: renames or drops a result key fails loudly instead of silently hydrating the
@@ -80,7 +114,13 @@ REQUIRED_DEMO_KEYS: dict[str, tuple[str, ...]] = {
     ),
     "targeting": ("best_guide", "best_efficiency", "best_off_target_risk", "best_composite"),
     "toxicology_stats": ("min_ld50", "max_ld50", "median_ld50"),
-    "antidote": ("best_antidote", "best_antagonized_fraction", "best_survival_probability"),
+    "antidote": (
+        "best_antidote",
+        "best_antagonized_fraction",
+        "best_survival_probability",
+        "challenge_therapeutic_window",
+        "challenge_margin_of_safety",
+    ),
     "exposure": (
         "absorbed_dose",
         "cumulative_exposure",
@@ -88,7 +128,14 @@ REQUIRED_DEMO_KEYS: dict[str, tuple[str, ...]] = {
         "risk_quotient",
         "verdict",
     ),
-    "forensics": ("snr", "detection_confidence", "concentration", "recovered_dose", "top_match"),
+    "forensics": (
+        "snr",
+        "detection_confidence",
+        "concentration",
+        "recovered_dose",
+        "top_match",
+        "mixture",
+    ),
 }
 
 
@@ -230,6 +277,8 @@ def generate_variables(
             get_num(antidote, "best_antagonized_fraction", 0.0) * 100.0
         ),
         "HERACLES_SURVIVAL_PCT": _fmt(get_num(antidote, "best_survival_probability", 0.0) * 100.0),
+        "HERACLES_WINDOW": _fmt(get_num(antidote, "challenge_therapeutic_window", 0.0)),
+        "HERACLES_MARGIN": _fmt(get_num(antidote, "challenge_margin_of_safety", 0.0)),
         "HERACLES_ABSORBED_DOSE": _fmt(get_num(exposure, "absorbed_dose", 0.0)),
         "HERACLES_MOE": _fmt(get_num(exposure, "margin_of_exposure", 0.0)),
         "HERACLES_RQ": _fmt(get_num(exposure, "risk_quotient", 0.0)),
@@ -249,6 +298,11 @@ def generate_variables(
         ),
         "HERACLES_CONCENTRATION": _fmt(get_num(forensics, "concentration")),
         "HERACLES_TOP_MATCH": str(forensics.get("top_match", "n/a")),
+        "HERACLES_MIX": _mix_primary(forensics.get("mixture")),
+        "HERACLES_MIX_PRIMARY_PCT": _mix_weight(forensics.get("mixture"), "primary_weight"),
+        "HERACLES_MIX_SECONDARY": _mix_secondary(forensics.get("mixture")),
+        "HERACLES_MIX_SECONDARY_PCT": _mix_weight(forensics.get("mixture"), "secondary_weight"),
+        "HERACLES_MIX_RESIDUAL": _mix_residual(forensics.get("mixture")),
         "HERACLES_RECOVERED_DOSE": _fmt(get_num(forensics, "recovered_dose", 0.0)),
         "HERACLES_FOR_SIGNAL": str(forensic_params["signal"]),
         "HERACLES_FOR_NOISE": str(forensic_params["noise_rms"]),

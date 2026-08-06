@@ -45,6 +45,16 @@ class TestLifecycle:
         assert any(a.name == "toxicology" for a in brief.assets)
         assert any(a.name == "targeting_design" for a in brief.assets)
 
+    def test_determinism_constraint_makes_no_governing_seed_claim(self) -> None:
+        """The constraint a coordinator actually reads must not imply the
+        seed draws from an RNG. DEMO_SEED = 11 governs nothing (no code path
+        draws from a random source); the detail is pinned here so a
+        reintroduced "fixed seed" framing fails.
+        """
+        detail = next(c.detail for c in PROVIDER.brief().constraints if c.kind == "determinism")
+        assert detail == "no clock, no RNG, no external calls"
+        assert "seed" not in detail.lower()
+
     def test_recon(self) -> None:
         from bond_api.protocol import ReconRequest
 

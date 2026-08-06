@@ -15,6 +15,104 @@ audit is fully remediated — every finding in
 `../output/verify/no_time_to_die.json` was made true or withdrawn, and each is
 now pinned by a test with a positive control, so none of them reappears below.
 
+## Round-2 (2026-08-06)
+
+Hostile self-review plus the standing backlog (C1/C2/C3, V1/V2, E1/E2). All
+gates green: **325 passed, 0 skipped, 0 failed**; line+branch coverage on
+`src/` **99.91%** (gate ≥90, 0 missed lines, 1 partial branch); `ruff check`
+and `ruff format --check` clean; `mypy src/ scripts/` clean (19 files); mock
+grep and exemplar-lineage grep clean; `git status` clean after commit.
+
+### Findings and fixes
+
+- **[NEW — hostile review] `fraction_affected` overflowed to `OverflowError`
+  on a large dose.** The naive `dose**hill / (dose**hill + ld50**hill)` raises
+  `OverflowError` (or would read `nan` = inf/inf at the borderline) for a large
+  enough `dose` and `hill`, e.g. `fraction_affected(1e200, 1.0, 3.0)`. Fix:
+  the overflow-free form `1 / (1 + (ld50/dose)**hill)`, which is equal wherever
+  neither overflows and returns the correct limit 1.0 for arbitrarily large
+  doses. *Evidence:* `tests/test_toxicology.py::test_extreme_dose_does_not_overflow`
+  (also pins the LD50 value still reads 0.5).*
+- **C2 — `mission.py` determinism constraint still said "fixed seed, no random
+  draws"**, the one protocol payload an orchestrator/CLI actually reads. Change:
+  detail is now `"no clock, no RNG, no external calls"` (DEMO_SEED governs
+  nothing). *Evidence:* `tests/test_mission.py::test_determinism_constraint_makes_no_governing_seed_claim`.
+- **C3 — `therapeutic_window` / `margin_of_safety` were 100%-covered dead
+  public surface.** Resolved by *wiring them in*: `screen_report` now returns
+  `challenge_therapeutic_window` (`toxin ld50 / dose`) and
+  `challenge_margin_of_safety` (`window - 1`, `None` for a zero dose), tokens
+  `HERACLES_WINDOW`/`HERACLES_MARGIN` quote them, and `docs/architecture.md`
+  and the tests record the consumer. *Evidence:*
+  `tests/test_antidote_screening.py::TestScreenReport` (shape, LD50-driven
+  window, zero-dose `None`).
+- **C1 — `bond-api` path dependency was an absolute machine path.** Now
+  `bond-api = { path = "../bond-api" }` (relative), and `bond-utilities` is
+  declared the same way for E1. *Evidence:* the package tree was copied to a
+  fresh location under `/tmp`, linked to the sibling deps, `uv sync`'d and all
+  325 tests passed from there — no absolute path required.
+- **V1 — `match_unknown`'s all-or-nothing contract was untested.**
+  `tests/test_delivery_forensics.py::test_heterogeneous_length_library_raises_all_or_nothing`
+  now pins that a library mixing compatible and incompatible lengths raises
+  rather than ranking the compatible subset.
+- **V2 — `docs/architecture.md`'s function inventory was unbound prose.**
+  `tests/test_architecture.py::TestInventoryBinding` parses the
+  "The domain modules, individually" table, resolves every backticked
+  identifier on its module, and proves (via a fabricated-identifier control)
+  that the parse is not vacuous.
+- **E1 — provenance persistence is now bound to `bond-utilities`.**
+  `scripts/execute.py` runs the execution then persists the mission record via
+  `mission_io.record_provenance_outcome` into
+  `output/data/mission_record.json` with **pinned** `started_at`/`now` (a real
+  wall clock would break byte-identity). `bond-utilities` is a declared
+  dependency. *Evidence:*
+  `tests/test_scripts_smoke.py::test_execute_writes_a_byte_identical_mission_record`
+  (two runs byte-identical, and the record passes `verify_provenance`).
+- **E2 — mixture spectral decomposition added.** `decompose_mixture` /
+  `mixture_analysis` in `delivery_forensics.py` do a non-negative 1-/2-component
+  least-squares fit (spirit of Lawson & Hanson 1974, added to
+  `references.bib`) that recovers the mixing fractions of a residue that is a
+  blend — which single-spectrum cosine matching cannot express. The demo carries
+  a 60/40 ricin+atropine blend (`FORENSIC_MIXTURE`, registered in
+  `data/claim_ledger.yaml` and in `input_payload()`), `run_demo`'s forensics
+  includes it, and tokens `HERACLES_MIX*` quote the live result. *Evidence:*
+  `tests/test_delivery_forensics.py::TestDecomposeMixture` /
+  `TestMixtureAnalysis` (blend→pair, pure→single, empty/zero/heterogeneous
+  errors, clip and collinear branch controls).
+- **NEW — the str/weight swap bug in `mixture_analysis` was caught and fixed
+  during development** (secondary name vs weight were swapped); covered by the
+  test suite.
+
+### Manuscript deepening
+
+- `manuscript/02_methodology.md`: mixture-decomposition maths; the challenge
+  therapeutic-window definition in the antidote section.
+- `manuscript/03_results.md`: live-token "Mixture decomposition" subsection; a
+  therapeutic-window + margin sentence in the antidote section.
+- `manuscript/07_scope_and_related_work.md`: a dedicated "Uncertainty and
+  limitations (round-2 additions)" subsection covering the mixture fractions,
+  the therapeutic window, and the uncited LD50 status; a Lawson & Hanson
+  related-work entry.
+- `manuscript/references.bib`: `@lawsonhanson1974`.
+- `output/` regenerated live from the engine (`manuscript_variables.json`, 9
+  resolved sections, 5 figures) by `z_generate_manuscript_variables.py`.
+
+### Left for a future round
+
+- **D1 remains open, by deliberate choice.** The seven `ld50_*` values still
+  carry no `citation:`; `synthetic: false` remains "commonly-cited
+  order-of-magnitude … without a specific citation". Round-2 did **not**
+  fabricate bibliographic entries to fill them — sourcing each to a specific
+  real publication (and re-flagging any that cannot be) is recorded in
+  `manuscript/07_scope_and_related_work.md` "Uncertainty and limitations" and
+  left here. This is the honest resolution, not a made-true one.
+- The final partial branch on `manuscript_variables._mix_*` non-numeric-guard
+  paths (99.91% line+branch, gate ≥90%) is left uncovered: it is defensive code
+  not reachable from a real demo result.
+- C1's symlink relocation check is not part of the committed suite (needs a
+  sibling-tree copy); re-run the `/tmp` relocation + `uv sync` + pytest to
+  confirm relocatability on a fresh checkout.
+
+---
 ## Open work
 
 Eight items. Two trace to entries still listed in

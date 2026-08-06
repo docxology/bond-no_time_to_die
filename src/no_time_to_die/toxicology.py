@@ -58,7 +58,13 @@ def fraction_affected(dose: float, ld50: float, hill: float) -> float:
         raise ValueError("hill must be > 0")
     if dose == 0:
         return 0.0
-    return float(dose**hill / (dose**hill + ld50**hill))
+    # Overflow-free Hill form. ``dose**hill / (dose**hill + ld50**hill)``
+    # overflows to ``inf`` (and so reads ``nan`` = inf/inf) for a large enough
+    # ``dose`` and ``hill``; ``(ld50/dose)**hill -> 0`` as ``dose`` grows, so
+    # ``1 / (1 + (ld50/dose)**hill)`` never overflows and returns the correct
+    # limit 1.0 for arbitrarily large doses. The two forms are equal wherever
+    # neither overflows.
+    return float(1.0 / (1.0 + (ld50 / dose) ** hill))
 
 
 def dose_for_fraction(fraction: float, ld50: float, hill: float) -> float:

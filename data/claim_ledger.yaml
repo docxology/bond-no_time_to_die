@@ -282,6 +282,11 @@ claims:
     units: relative response
     synthetic: true
     source: "Synthetic unknown-residue spectrum recovered from the glass"
+  - id: forensic_mixture
+    value: [0.72, 0.4, 0.22, 0.11, 0.372]
+    units: relative response
+    synthetic: true
+    source: "Synthetic 60/40 ricin+atropine blend used to exercise mixture decomposition"
   - id: delivery_plot_dose
     value: 100.0
     units: arbitrary mass

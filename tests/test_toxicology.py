@@ -27,6 +27,16 @@ class TestFractionAffected:
     def test_high_dose_saturates(self) -> None:
         assert fraction_affected(1e6, 10.0, 2.0) > 0.999
 
+    def test_extreme_dose_does_not_overflow(self) -> None:
+        """The naive ``dose**hill / (dose**hill + ld50**hill)`` overflows:
+        ``fraction_affected(1e200, 1.0, 3.0)`` used to raise OverflowError
+        (and a borderline value could read ``nan`` = inf/inf). The
+        overflow-free form returns the correct limit 1.0 instead.
+        """
+        assert fraction_affected(1e200, 1.0, 3.0) == pytest.approx(1.0)
+        # Still exactly half at the LD50 (the rewrite must not shift values).
+        assert fraction_affected(1.0, 1.0, 3.0) == pytest.approx(0.5)
+
     def test_negative_dose_raises(self) -> None:
         with pytest.raises(ValueError):
             fraction_affected(-1.0, 10.0, 2.0)

@@ -54,6 +54,33 @@ Boundaries kept deliberately out of scope:
   instrument. The reference genome is a *constructed* input with a planted,
   documented structure; the results measure recovery of that planted structure.
 
+### Uncertainty and limitations (round-2 additions)
+
+Three quantities introduced or re-exposed in round 2 carry their own,
+explicit uncertainty:
+
+- **Mixture mixing fractions.** `decompose_mixture` reports weights that are
+  a *fit*, not a measurement. They are exact here only because the 5-bin
+  fingerprints are noiseless and the blend was planted; on a real residue the
+  weight estimates would carry instrument noise, unknown transfer, and
+  library incompleteness that no model in this package captures. The residual
+  token reports the fit's unexplained variance, and the weights sum to one by
+  construction (they cannot express a missing third component or an absolute
+  recovered amount).
+- **The challenge therapeutic window.** `HERACLES_WINDOW` is the ratio of the
+  toxin LD50 to the administered demo dose. It is arithmetic context, not a
+  pharmacology finding: the LD50 is itself an order-of-magnitude figure with
+  no citation (see the `synthetic`/`synthetic: false` split in
+  `data/claim_ledger.yaml`), the dose is a synthetic input, and a real
+  therapeutic window depends on route, species, and formulation the ratio
+  does not model. The margin is consequently not a clinical safety margin.
+- **The LD50 values remain uncited.** Per the ledger contract, `synthetic:
+  false` means ``a commonly-cited order-of-magnitude figure … recorded without
+  a specific citation`` — a provenance *label*, not a reference. This round
+  deliberately did **not** fabricate bibliographic entries to fill the seven
+  `ld50_*` `citation:` fields; sourcing each to a specific publication is
+  recorded as open work in `TODO.md` rather than papered over.
+
 ## Related work
 
 The package extends the BOND suite pattern established by `bond-api` (the
@@ -76,6 +103,8 @@ well-established published method rather than an invention of this package:
 - **Delivery kinetics** use the one-compartment first-order absorption model
   usually attributed to Bateman [@bateman1910solution] and standard in
   pharmacokinetics texts [@gibaldi1982pharmacokinetics].
+- **Mixture decomposition** is a non-negative least-squares fit in the spirit
+  of Lawson and Hanson [@lawsonhanson1974].
 - **Antidote pharmacology** uses the Cheng–Prusoff relation
   [@cheng1973relationship] over Langmuir occupancy [@langmuir1918adsorption].
 - **Exposure and risk** follow the NRC risk-assessment framing

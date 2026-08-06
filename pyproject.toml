@@ -16,6 +16,7 @@ dependencies = [
     "matplotlib>=3.7.0",
     "pyyaml>=6.0",
     "bond-api",
+    "bond-utilities",
 ]
 
 [project.optional-dependencies]
@@ -27,10 +28,13 @@ dev = [
     "ruff>=0.5.0",
 ]
 
-# bond-api is the FROZEN mission protocol (Layer 1). Point at the local path so
-# this film package can be imported by the orchestrator via bond_api.discovery.
+# bond-api is the FROZEN mission protocol (Layer 1); bond-utilities is the
+# Layer 0 provenance/utility foundation the mission record persistence uses.
+# Both are sibling trees — relative so the package can be synced from a
+# relocated clone (never an absolute machine path).
 [tool.uv.sources]
-bond-api = { path = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" }
+bond-api = { path = "../bond-api" }
+bond-utilities = { path = "../bond-utilities" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

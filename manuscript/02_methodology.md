@@ -91,6 +91,17 @@ residue spectrum is identified by cosine similarity against the reference
 library (`match_unknown`). The demonstration operates at a
 limit-of-detection SNR of `{{HERACLES_LOD_SNR}}`.
 
+**Mixture decomposition.** A residue that is itself a blend is decomposed into
+non-negative mixing fractions rather than ranked against a single entry
+(`decompose_mixture`, a two-component non-negative least-squares fit in the
+spirit of Lawson and Hanson 1974): the unknown spectrum is approximated as
+`sum_k w_k s_k` with `w_k >= 0` and `sum_k w_k = 1`, and the 1- or 2-component
+candidate with the smallest squared residual wins. A pure single poison is
+returned as a one-element decomposition; weights are *mixing fractions* (they
+sum to 1), and the squared residual measures how much of the unit-fraction
+model the spectrum does not explain. `mixture_analysis` composes this into the
+primary/secondary components and residual consumed by the demo and tokens.
+
 ## Guide design and population off-target (`targeting_design.py`)
 
 The countermeasure guide is not given — it is *designed*. `gc_content` and
@@ -135,7 +146,10 @@ The `Ki` values fed to this model are invented, not published — see
 [Scope](#scope-and-related-work). The relation and the isotherm are real and are
 tested against hand-checkable values; the library entries are illustrative
 inputs named after real drugs, and the model is applied uniformly to all five
-regardless of whether the real drug is a competitive antagonist.
+regardless of whether the real drug is a competitive antagonist. `screen_report`
+also reports the *challenge* therapeutic window `toxin LD50 / dose` and margin
+of safety `window - 1` — a screening context (how far the administered dose sits
+from the population-lethal level), not a clinical dosing index.
 
 ## Exposure assessment (`exposure_assessment.py`)
 

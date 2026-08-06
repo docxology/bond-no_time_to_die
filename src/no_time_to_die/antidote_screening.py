@@ -234,10 +234,21 @@ def screen_report(
 
     Carries the ranked results plus the best antidote's name, antagonized
     fraction, and survival probability — consumed by the mission adapter and
-    manuscript tokens.
+    manuscript tokens. It also reports the *challenge* therapeutic window
+    ``toxin LD50 / dose`` and margin of safety ``window - 1`` (the number of
+    times the challenge dose fits inside the LD50), which is what gives the
+    screening context: a large window means the poison dose sits far below the
+    population-lethal level. ``window``/``margin`` are ``None`` for a zero
+    challenge dose (the ratio is undefined), not ``inf``.
     """
     ranked = screen_antidotes(toxin, dose, antagonist_conc, library=library)
     best = ranked[0]
+    if dose > 0:
+        window = therapeutic_window(lethal_dose=toxin.ld50_mg_kg, effective_dose=dose)
+        margin = margin_of_safety(toxin.ld50_mg_kg, dose)
+    else:
+        window = None
+        margin = None
     return {
         "antidote_count": len(ranked),
         "ranked": tuple(
@@ -253,4 +264,6 @@ def screen_report(
         "best_antidote": best.name,
         "best_antagonized_fraction": best.antagonized_fraction,
         "best_survival_probability": best.survival_probability,
+        "challenge_therapeutic_window": window,
+        "challenge_margin_of_safety": margin,
     }
