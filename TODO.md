@@ -121,22 +121,16 @@ by reading the tree this session.
 
 ### Correctness
 
-**C1 — `bond-api` path dependency is an absolute machine path.**
-`pyproject.toml:33` reads
-`bond-api = { path = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" }`.
-The package therefore cannot be synced from a relocated or cloned checkout, and
-this violates the standing "never hardcode paths" rule. `bond-cli` and
-`bond-orchestrator` already use the relative form (`{ path = "../bond-api" }`);
-most film packages, including this one, do not — so this is a suite-wide
-pattern, but fixing it here is self-contained and needs no sibling edits.
-*Done:* line 33 is `bond-api = { path = "../bond-api" }` and a sync + full suite
-succeeds with the package tree moved (or with the absolute path made
-unreachable).
+**C1 — closed 2026-11-03: the `bond-api` path dependency is the sibling-relative form.**
+`pyproject.toml` declares `bond-api = { path = "../bond-api" }` — the form `bond-cli` and
+`bond-orchestrator` already used — and `uv.lock` was regenerated from that declaration instead of
+being hand-edited, so the package resolves from a relocated or cloned checkout rather than only on
+the machine that wrote the pin.
+*Closure measured 2026-11-03:* from a copy of the tree in a different directory with `../bond-api`
+beside it, `uv sync --extra dev` succeeds and the full suite is **325 passed**.
 *Command:*
 ```bash
-cp -R no_time_to_die /tmp/ntd_relocate && cd /tmp/ntd_relocate \
-  && ln -s "$OLDPWD/../bond-api" ../bond-api \
-  && uv sync --all-extras && uv run pytest tests/ -q
+cd "$(git rev-parse --show-toplevel)" && uv sync --extra dev && uv run pytest tests/ -q
 ```
 
 **C2 — `mission.py` still emits the withdrawn "fixed seed" framing.**
