@@ -7,8 +7,10 @@ package: **No Time to Die (2021)**, mission codename **HERACLES**.
 
 - **Scope = this package directory only.** Never touch sibling bond packages,
   bond root files, or the template repo.
-- Local-only working tree: no remote, never push. Path-scoped commits inside
-  this repo only (`git add -A`).
+- Published working tree: `origin` is `docxology/bond-no_time_to_die`. Land a
+  change through an ordinary branch, pull request and merge — never a
+  force-push or a history rewrite — committing this repo's paths only
+  (`git add -A`).
 - **No mock framework** anywhere in `tests/` — real data + computation.
 - **≥90% line+branch coverage on `src/`:**
   `uv run pytest tests/ --cov=src --cov-fail-under=90`

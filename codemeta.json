@@ -26,6 +26,6 @@
   "license": "https://spdx.org/licenses/MIT",
   "name": "No Time to Die: HERACLES — Special-Agent Mission Software",
   "version": "1.0.0",
-  "description": "Deterministic special-agent mission software modelling a DNA-targeted bioweapon countermeasure, poison-garden toxicology, and poison-delivery forensics (No Time to Die, 2021). PROJECT BOND local-only film package.",
+  "description": "Deterministic special-agent mission software modelling a DNA-targeted bioweapon countermeasure, poison-garden toxicology, and poison-delivery forensics (No Time to Die, 2021). PROJECT BOND film package.",
   "programmingLanguage": "Python"
 }

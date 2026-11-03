@@ -56,7 +56,8 @@ uv run mypy src/ scripts/
   measured rather than assumed; `tests/test_demo_evidence.py` fails if the
   demonstration degenerates.
 - **Outputs are disposable.** Regenerate `output/` (git-ignored); never hand-edit.
-- **Local-only.** No remote, never push.
+- **Published tree.** `origin` is the GitHub repository; changes land through an
+  ordinary branch, pull request and merge.
 
 ## Cross-refs
 
