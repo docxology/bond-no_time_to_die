@@ -307,7 +307,8 @@ honest scope the Phase-6 audit forced claims down to.
 - **The package is not standalone-installable.** It depends on the sibling
   `bond-api` tree by path; there is no index release. C1 makes that path
   relative, not remote.
-- **Local-only tree.** No remote, never push; commits stay inside this
+- **Published tree.** `origin` is the GitHub repository; changes land through
+  an ordinary branch, pull request and merge, and commits stay inside this
   repository.
 
 ## Verification

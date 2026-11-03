@@ -85,7 +85,8 @@ The `MissionProvider` phases return frozen `bond_api.protocol` dataclasses:
 
 ## Guardrails
 
-Local-only working tree (never push, no remote). ≥90% line+branch coverage on
+Published working tree (`origin` is `docxology/bond-no_time_to_die`); changes
+land through an ordinary branch, pull request and merge. ≥90% line+branch coverage on
 `src/` enforced by `pyproject.toml` (the gate is authoritative — this README
 deliberately does not quote a coverage figure that would go stale); zero mocks;
 thin scripts; full type hints; `ruff` + `mypy` clean. `output/` is git-ignored

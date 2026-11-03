@@ -1,5 +1,5 @@
 # HERACLES — special-agent mission software (No Time to Die, 2021)
-# PROJECT BOND film package: no_time_to_die. Local-only working tree; never push.
+# PROJECT BOND film package: no_time_to_die. Published tree; changes land by branch, PR and merge.
 # Loaded by src/no_time_to_die/manuscript_variables.py (tokens are computed,
 # never hand-authored in prose).
 
@@ -21,7 +21,7 @@ authors:
     corresponding: true
 
 publication:
-  # Local-only tree: no remote, no DOI. Deposits are not published.
+  # No DOI: no deposit is published.
   local_only: true
 
 keywords:
