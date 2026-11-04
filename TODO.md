@@ -108,9 +108,10 @@ grep and exemplar-lineage grep clean; `git status` clean after commit.
 - The final partial branch on `manuscript_variables._mix_*` non-numeric-guard
   paths (99.91% line+branch, gate ≥90%) is left uncovered: it is defensive code
   not reachable from a real demo result.
-- C1's symlink relocation check is not part of the committed suite (needs a
-  sibling-tree copy); re-run the `/tmp` relocation + `uv sync` + pytest to
-  confirm relocatability on a fresh checkout.
+- C1's relocation check is now part of the committed suite in the form it can
+  take: `scripts/vendor.py --check` verifies both recorded copies offline and
+  `tests/test_vendor_provenance.py` runs it under pytest. The separate
+  sibling-tree copy is no longer needed — the dependency is inside the tree.
 
 ---
 ## Open work
@@ -122,6 +123,10 @@ by reading the tree this session.
 ### Correctness
 
 **C1 — closed 2026-11-03: the `bond-api` path dependency is the sibling-relative form.**
+*(Superseded 2026-11-04: the declaration is now `vendor/bond-api` — see "Vendoring
+wave" below. The 2026-11-03 closure was measured against `path = "../bond-api"`
+and said nothing about a clone that has no sibling; this row keeps that
+measurement as the record of what was true then.)*
 `pyproject.toml` declares `bond-api = { path = "../bond-api" }` — the form `bond-cli` and
 `bond-orchestrator` already used — and `uv.lock` was regenerated from that declaration instead of
 being hand-edited, so the package resolves from a relocated or cloned checkout rather than only on
@@ -298,32 +303,132 @@ honest scope the Phase-6 audit forced claims down to.
   This is the intended contract (documented at
   `src/no_time_to_die/delivery_forensics.py:159-162`); V1 asks for a test, not a
   behaviour change.
-- **The package is not standalone-installable.** It depends on the sibling
-  `bond-api` tree by path; there is no index release. C1 makes that path
-  relative, not remote.
+- **The package is standalone-installable, without an index release.** Both
+  `bond-api` and `bond-utilities` are recorded copies inside this repository
+  (`vendor/`) with a `PROVENANCE.json` per package, so a clone resolves its own
+  dependencies: measured 2026-11-04 by exporting the tree into a directory whose
+  parent holds no sibling package, where `uv lock --check` and `uv sync` are
+  rc=0 and the full suite passes. There is still no PyPI release, and the
+  recorded copies are refreshed by `scripts/vendor.py`, never by hand.
 - **Published tree.** `origin` is the GitHub repository; changes land through
   an ordinary branch, pull request and merge, and commits stay inside this
   repository.
 
+## Vendoring wave (2026-11-04)
+
+Both dependencies were sibling checkouts (`../bond-api`, `../bond-utilities`),
+so a clone of this repository resolved neither and `uv lock --check` failed
+against the previous lock (rc=1, with uv's own "run `uv lock`" hint — a failure,
+not a stale-file notice). They are now recorded copies inside this repository:
+`vendor/bond-api` and `vendor/bond-utilities`, each with a `PROVENANCE.json`
+carrying the upstream commit and a sha256 per copied file, verified offline by
+`scripts/vendor.py --check` and inside the suite by
+`tests/test_vendor_provenance.py`. `[tool.uv.sources]` points at `vendor/`,
+`uv.lock` was regenerated from that declaration (two runs byte-identical, four
+moved lines, `--refresh` unchanged, no `../bond-api` left anywhere), and
+`ruff`/`mypy` exclude the copies so their upstream bytes stay byte-identical.
+
+Measured at the pre-change head `10ca804`: lock/sync rc=0, **325 passed**,
+99.91% (790 statements / 264 branches, one partial branch in
+`manuscript_variables.py`), `ruff check` **1 finding**, `ruff format --check`
+**37** files, the five phase CLIs, `run_mission.py` and the token generator all
+rc=0, regeneration digest `bc0e30be173ffab8`. At the change's tip:
+**326 passed** (the added provenance test), 99.91% unchanged, `ruff format
+--check` **39** files, `mypy src/ scripts/` 20 files via the interpreter,
+the vendored payload byte-equal to upstream
+`c0362ff0c9d7` (10/10 files) and `a1acbe4a73e4` (14/14), and all 32 patch blobs
+matching their recorded post-images. The regeneration digest at the tip is
+`84f5cc9bbdb59d49`: byte-identical across two consecutive renders, and *different
+from the pre-change value by design* — it covers the hydrated copies of
+`manuscript/*.md` under `output/`, and this change corrects
+`manuscript/05_experimental_setup.md`. The honest cross-head comparison is a
+file diff, not the digest.
+
+**D2 — a pre-existing `ruff check` finding stands at both ends and is not
+folded in here.** `UP017` at `scripts/execute.py:38:46` ("Use `datetime.UTC`
+alias"), the only finding in the scoped gate before and after. It is a one-line
+fix and it is not this change's debt: a dependency change does not carry an
+unrelated lint repair. Fix it in its own change by importing `UTC` from
+`datetime`.
+
+**D3 — what the `extend-exclude` line buys, measured with both arms keeping the
+`[tool.ruff]` table in this file.** Arm A (`extend-exclude = ["vendor"]`
+present): whole-tree `ruff check .` rc=1 with **1 error** — the pre-existing
+`UP017` — and `ruff format --check .` rc=0 with **69 files already formatted**.
+Arm B (only that line removed): `ruff check .` rc=1 with **11 errors**, ten of
+them in `vendor/` (matching `ruff check vendor/` alone, which reports 10), and
+`ruff format --check .` rc=1 with **7 targets**: `vendor/bond-api/README.md`,
+five modules under `vendor/bond-api/src/bond_api/`, and
+`vendor/bond-utilities/README.md`. So without the line the project's own
+formatter would rewrite recorded upstream bytes and the provenance digests
+would fail — the exclusion is what keeps the copies strict, and `vendor.py
+--check` is what proves it.
+
+**D4 — the zero-mock scan could not print `Clean` in four of its copies.**
+`grep -rn "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/` returns
+`tests/AGENTS.md:21` — the rule's own prose — so it exits 0 and `|| echo Clean`
+never fires. The `tests/*.py` spelling does print it (rc=1, 0 hits), which is
+why the defect hid: the two spellings look equivalent. All four copies
+(`AGENTS.md`, `TODO.md`, `docs/README.md`, `docs/testing_philosophy.md`) now
+pass `--include='*.py'`, and the two prose copies say why.
+
+**D5 — the verification block's expectations were undated and two of them were
+stale.** It read `301 passed` (the head it now sits at measures 325 before the
+change and 326 after it), `34 files already formatted` (measured: 37 → 39), and
+`19 source files` (20 after the change; before it the same command produced no
+result at all — D6). Each is corrected where it is printed, with the head it
+was measured at beside it. The same block's
+`Run from the package root (projects/working/bond/…)` and `README.md`'s
+`cd projects/working/bond/…` named a directory that does not exist in this
+vault; both now say the package root, or resolve it with
+`$(git rev-parse --show-toplevel)`. Three further copies carried that path (the
+package skill on two lines, and `manuscript/05_experimental_setup.md`, whose
+sentence also called the tree "isolated local-only" while `README.md` names its
+published `origin`) and are corrected with them. This row writes the path with
+an ellipsis on purpose: a sweep for the literal path now hits only this row,
+which is why the row does not re-create the string in full.
+
+**D6 — `uv run mypy` and `uv run python -m mypy` are not the same command in
+this working copy.** `.venv/bin/mypy` is a stale console script whose shebang
+still points at `Private/bond-no_time_to_die/.venv/bin/python`, a path that no
+longer exists; executing it fails, and the fallback is a host mypy whose
+interpreter cannot import `typing_extensions`, so `uv run mypy src/ scripts/`
+reports a `ModuleNotFoundError` instead of a result. The interpreter spelling
+runs the locked mypy 2.3.0 in the project venv: rc=0, 20 source files (12 for
+`src/` alone). The two-arm evidence that this is the working copy and not the
+command: in a fresh export with a venv uv created from scratch, *both* spellings
+are rc=0. This is the same hazard `tests/AGENTS.md` already documents for
+`pytest`, and the same remedy — gate through the interpreter. The working
+copy's `.venv` is left as it is; recreating it is a separate decision.
+
 ## Verification
 
-Run from the package root
-(`projects/working/bond/no_time_to_die`). If `uv` reports
+Run from the package root — `cd "$(git rev-parse --show-toplevel)"` if the
+working directory is not it. If `uv` reports
 `Failed to initialize cache at ~/.cache/uv`, the shell sandbox is blocking it —
 re-run the same command unsandboxed.
 
 ```bash
 uv run pytest tests/ --cov=src --cov-fail-under=90
-# → 301 passed; TOTAL 100.00% (line+branch) on src/; gate is >=90%
+# → 326 passed; TOTAL 99.91% (line+branch) on src/ (790 statements, 264
+#   branches, 1 partial branch); gate is >=90%
 
 uv run ruff check src/ scripts/ tests/ && uv run ruff format --check src/ scripts/ tests/
-# → "All checks passed!" and "34 files already formatted"
+# → one pre-existing UP017 finding at scripts/execute.py:38 (row D2, not folded
+#   into this change) and "39 files already formatted"
 
-uv run mypy src/ scripts/
-# → "Success: no issues found in 19 source files"
+uv run python -m mypy src/ scripts/          # gate through the interpreter
+# → "Success: no issues found in 20 source files". The console-script spelling
+#   (`uv run mypy`) is what the other docs use; in this working copy it resolves
+#   a stale .venv/bin/mypy whose shebang points at a path that no longer exists,
+#   and the host fallback cannot import typing_extensions — see row D6.
 
-grep -rn "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo Clean
-# → Clean (zero-mock policy)
+uv run python scripts/vendor.py --check || echo "vendor: stale"
+# → "vendor/bond-api: ok" and "vendor/bond-utilities: ok", 0 finding(s)
+
+grep -rn --include='*.py' "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo Clean
+# → Clean (zero-mock policy). --include='*.py' is load-bearing: without it
+#   tests/AGENTS.md's own prose is a hit (row D4).
 
 rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**' --glob '!output/**' || echo Clean
 # → Clean (no exemplar lineage)

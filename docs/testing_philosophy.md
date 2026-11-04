@@ -74,5 +74,7 @@ input makes inevitable is not evidence.
 ## No-mock scan
 
 ```bash
-grep -rn "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo Clean
+# --include='*.py' is load-bearing: without it the rule's own prose in
+# tests/AGENTS.md is a hit, so the scan can never print Clean.
+grep -rn --include='*.py' "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo Clean
 ```

@@ -43,7 +43,7 @@ tests/                     zero-mock real-data suite
 ## Quick start
 
 ```bash
-cd projects/working/bond/no_time_to_die
+cd "$(git rev-parse --show-toplevel)"
 uv sync --extra dev
 
 # Run the full deterministic mission flow
@@ -60,8 +60,13 @@ uv run mypy src/ scripts/
 
 ## Protocol integration
 
-- Local path dependency on `bond-api` (the FROZEN mission protocol) declared in
-  `pyproject.toml` under `[tool.uv.sources]`.
+- Both path dependencies are recorded copies inside this repository:
+  `bond-api` (the FROZEN mission protocol) from `vendor/bond-api` and
+  `bond-utilities` from `vendor/bond-utilities`, declared in `pyproject.toml`
+  under `[tool.uv.sources]`. Each `PROVENANCE.json` records the upstream commit
+  and a sha256 per copied file; `uv run python scripts/vendor.py --check`
+  verifies them offline, and `tests/test_vendor_provenance.py` runs that check
+  inside the suite. Refresh a copy with `scripts/vendor.py` — never by hand.
 - `src/no_time_to_die/mission.py` exposes `MissionProvider` (class) plus a
   module-level `PROVIDER` instance and a populated `GADGET_REGISTRY`
   (`register_gadgets()`).

@@ -25,8 +25,8 @@
   `tempfile` import under `src/` fails here; do not weaken it to accommodate a module.
 - **`test_architecture.py` holds the boundary.** New code that puts computation in `scripts/` or
   I/O in the pure core fails this, by design.
-- **`test_mission.py` is the one module that needs the sibling `bond-api`.** It exercises the frozen
-  protocol; it is not a unit test of the pure core.
+- **`test_mission.py` is the one module that needs `bond-api`** (resolved from the recorded copy at
+  `vendor/bond-api`). It exercises the frozen protocol; it is not a unit test of the pure core.
 - **If the suite cannot import `bond_api` under `uv run pytest`,** run it as
   `uv run python -m pytest`: a stale console script left in `.venv/bin` by an earlier interpreter
   outlives that interpreter and runs a different library set. Gate through the interpreter.

@@ -30,11 +30,12 @@ dev = [
 
 # bond-api is the FROZEN mission protocol (Layer 1); bond-utilities is the
 # Layer 0 provenance/utility foundation the mission record persistence uses.
-# Both are sibling trees — relative so the package can be synced from a
-# relocated clone (never an absolute machine path).
+# Both are recorded copies inside this repository — never sibling checkouts and
+# never an absolute machine path, so a clone syncs on its own. Refresh them with
+# scripts/vendor.py; their bytes are bound by vendor/*/PROVENANCE.json.
 [tool.uv.sources]
-bond-api = { path = "../bond-api" }
-bond-utilities = { path = "../bond-utilities" }
+bond-api = { path = "vendor/bond-api" }
+bond-utilities = { path = "vendor/bond-utilities" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -66,10 +67,14 @@ exclude_lines = [
 ]
 
 [tool.ruff]
+# The vendored copies are byte-identical to upstream and must stay that way.
+extend-exclude = ["vendor"]
 line-length = 100
 src = ["src", "scripts", "tests"]
 
 [tool.mypy]
+# Vendored copies are a dependency; their bytes are bound by scripts/vendor.py.
+exclude = ["(^|/)vendor/"]
 python_version = "3.11"
 mypy_path = ["src"]
 explicit_package_bases = true
