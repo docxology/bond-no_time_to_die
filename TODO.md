@@ -335,9 +335,14 @@ Measured at the pre-change head `10ca804`: lock/sync rc=0, **325 passed**,
 rc=0, regeneration digest `bc0e30be173ffab8`. At the change's tip:
 **326 passed** (the added provenance test), 99.91% unchanged, `ruff format
 --check` **39** files, `mypy src/ scripts/` 20 files via the interpreter,
-digest byte-identical, the vendored payload byte-equal to upstream
+the vendored payload byte-equal to upstream
 `c0362ff0c9d7` (10/10 files) and `a1acbe4a73e4` (14/14), and all 32 patch blobs
-matching their recorded post-images.
+matching their recorded post-images. The regeneration digest at the tip is
+`84f5cc9bbdb59d49`: byte-identical across two consecutive renders, and *different
+from the pre-change value by design* — it covers the hydrated copies of
+`manuscript/*.md` under `output/`, and this change corrects
+`manuscript/05_experimental_setup.md`. The honest cross-head comparison is a
+file diff, not the digest.
 
 **D2 — a pre-existing `ruff check` finding stands at both ends and is not
 folded in here.** `UP017` at `scripts/execute.py:38:46` ("Use `datetime.UTC`
@@ -379,7 +384,9 @@ vault; both now say the package root, or resolve it with
 `$(git rev-parse --show-toplevel)`. Three further copies carried that path (the
 package skill on two lines, and `manuscript/05_experimental_setup.md`, whose
 sentence also called the tree "isolated local-only" while `README.md` names its
-published `origin`) and are corrected with them.
+published `origin`) and are corrected with them. This row writes the path with
+an ellipsis on purpose: a sweep for the literal path now hits only this row,
+which is why the row does not re-create the string in full.
 
 **D6 — `uv run mypy` and `uv run python -m mypy` are not the same command in
 this working copy.** `.venv/bin/mypy` is a stale console script whose shebang
