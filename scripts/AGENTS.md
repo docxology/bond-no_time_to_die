@@ -15,6 +15,6 @@
 - **`output/` is regenerable and git-ignored.** Never hand-edit anything under it.
 - **Scope is this package directory.** Do not write to sibling bond packages, the bond root, or the
   template repository.
-- **`mission.py` and `run_mission.py` need the sibling `bond-api`** (the frozen protocol); the pure
-  core and its own tests do not.
+- **`mission.py` and `run_mission.py` need `bond-api`** (the frozen protocol), resolved from the
+  recorded copy at `vendor/bond-api`; the pure core and its own tests do not.
 - `ruff` and `mypy` are clean on this directory, as they are on `src/`.

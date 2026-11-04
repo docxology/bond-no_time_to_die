@@ -4,9 +4,10 @@
 
 - Python {{PYTHON_VERSION}} (host), NumPy for the delivery/figure numerics,
   matplotlib (Agg backend) for figure rendering, PyYAML for config loading.
-- Repository tree: isolated local-only package rooted at
-  `projects/working/bond/no_time_to_die`; a local path dependency on the frozen
-  `bond-api` protocol.
+- Repository tree: this repository, published as
+  `docxology/bond-no_time_to_die`; both suite dependencies — the frozen
+  `bond-api` protocol and `bond-utilities` — are recorded copies under
+  `vendor/`, resolved by path from inside the tree.
 
 ## Deterministic demonstration parameters
 

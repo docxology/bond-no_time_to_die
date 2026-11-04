@@ -9,9 +9,8 @@ tags: [bond, film, pharmaco-forensics, bond-api, thin-orchestrator]
 
 # no-time-to-die
 
-Project-scoped skill for the BOND film package at
-`projects/working/bond/no_time_to_die/`. Load this when working inside the
-project.
+Project-scoped skill for the BOND film package at the root of this repository.
+Load this when working inside the project.
 
 ## When to Use
 
@@ -23,7 +22,7 @@ project.
 ## Quick Reference
 
 ```bash
-cd projects/working/bond/no_time_to_die
+cd "$(git rev-parse --show-toplevel)"
 uv sync --extra dev
 uv run python scripts/run_mission.py all   # brief|recon|plan|execute|debrief|all
 uv run python scripts/z_generate_manuscript_variables.py

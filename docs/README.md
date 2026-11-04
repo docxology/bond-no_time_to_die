@@ -25,6 +25,7 @@ Technical rulebook for agents and developers working inside the
 uv run pytest tests/ --cov=src --cov-fail-under=90
 uv run ruff check src/ scripts/ tests/ && uv run ruff format --check src/ scripts/ tests/
 uv run mypy src/ scripts/
-grep -rn "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo Clean
+uv run python scripts/vendor.py --check
+grep -rn --include='*.py' "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo Clean
 rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**' --glob '!output/**' || echo Clean
 ```

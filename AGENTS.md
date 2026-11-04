@@ -45,6 +45,11 @@ Frozen contract: `src/no_time_to_die/mission.py` must expose `MissionProvider`
 populated `GADGET_REGISTRY`. Discovery by slug `no_time_to_die`. Do not invent
 protocol types — use the `bond_api.protocol` dataclasses verbatim.
 
+`bond-api` and `bond-utilities` are recorded copies inside this repository
+(`vendor/bond-api`, `vendor/bond-utilities`), not sibling checkouts: a clone
+resolves its own dependencies. Refresh a copy with `scripts/vendor.py` and
+verify it with `scripts/vendor.py --check`; never edit `vendor/` by hand.
+
 ## Editing protocol
 
 1. Read `docs/agent_instructions.md` before modifying any project file.
@@ -59,8 +64,11 @@ protocol types — use the `bond_api.protocol` dataclasses verbatim.
 uv run pytest tests/ --cov=src --cov-fail-under=90
 uv run ruff check src/ scripts/ tests/ && uv run ruff format --check src/ scripts/ tests/
 uv run mypy src/ scripts/
+uv run python scripts/vendor.py --check   # recorded copies match PROVENANCE.json
 rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**' \
   --glob '!output/**' || echo Clean
-grep -rn "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo Clean
+# --include='*.py' is load-bearing: without it the rule's own prose in
+# tests/AGENTS.md is a hit, so this audit can never print Clean.
+grep -rn --include='*.py' "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo Clean
 git status --short   # clean after commit
 ```
