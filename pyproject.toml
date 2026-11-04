@@ -33,8 +33,8 @@ dev = [
 # Both are sibling trees — relative so the package can be synced from a
 # relocated clone (never an absolute machine path).
 [tool.uv.sources]
-bond-api = { path = "../bond-api" }
-bond-utilities = { path = "../bond-utilities" }
+bond-api = { path = "vendor/bond-api" }
+bond-utilities = { path = "vendor/bond-utilities" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -66,10 +66,14 @@ exclude_lines = [
 ]
 
 [tool.ruff]
+# The vendored copies are byte-identical to upstream and must stay that way.
+extend-exclude = ["vendor"]
 line-length = 100
 src = ["src", "scripts", "tests"]
 
 [tool.mypy]
+# Vendored copies are a dependency; their bytes are bound by scripts/vendor.py.
+exclude = ["(^|/)vendor/"]
 python_version = "3.11"
 mypy_path = ["src"]
 explicit_package_bases = true
