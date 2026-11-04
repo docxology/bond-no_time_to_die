@@ -395,7 +395,9 @@ longer exists; executing it fails, and the fallback is a host mypy whose
 interpreter cannot import `typing_extensions`, so `uv run mypy src/ scripts/`
 reports a `ModuleNotFoundError` instead of a result. The interpreter spelling
 runs the locked mypy 2.3.0 in the project venv: rc=0, 20 source files (12 for
-`src/` alone). This is the same hazard `tests/AGENTS.md` already documents for
+`src/` alone). The two-arm evidence that this is the working copy and not the
+command: in a fresh export with a venv uv created from scratch, *both* spellings
+are rc=0. This is the same hazard `tests/AGENTS.md` already documents for
 `pytest`, and the same remedy — gate through the interpreter. The working
 copy's `.venv` is left as it is; recreating it is a separate decision.
 
