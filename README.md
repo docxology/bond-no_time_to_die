@@ -5,6 +5,30 @@ codename **HERACLES**. A deterministic, fully-tested Python package that models
 the pharmaco-forensic concepts of the film as real mathematics with a
 shared provenance ledger.
 
+## Mission model
+
+```mermaid
+flowchart TD
+    accTitle: HERACLES implemented mission analyses
+    accDescr: Synthetic reference sequences, toxin, trace and exposure scenarios feed Guide specificity and population off-target scoring; Dose-response and antagonist screening; Residue-mixture forensics and cumulative exposure. The mission adapter returns specificity, screening, trace and exposure assessments with provenance, then a debrief.
+    I["Synthetic reference sequences, toxin, trace and exposure scenarios"]
+    G0["Guide specificity and population off-target scoring"]
+    I --> G0
+    G1["Dose-response and antagonist screening"]
+    I --> G1
+    G2["Residue-mixture forensics and cumulative exposure"]
+    I --> G2
+    O["mission.py: execute returns MissionOutcome<br/>Specificity, screening, trace and exposure assessments and provenance"]
+    G0 --> O
+    G1 --> O
+    G2 --> O
+    O --> F["debrief: mission summary"]
+```
+
+The branches group implemented capabilities; they do not imply a runtime order.
+
+**Source map:** [`bioweapon_counter.py`](src/no_time_to_die/bioweapon_counter.py), [`targeting_design.py`](src/no_time_to_die/targeting_design.py); [`toxicology.py`](src/no_time_to_die/toxicology.py), [`antidote_screening.py`](src/no_time_to_die/antidote_screening.py); [`delivery_forensics.py`](src/no_time_to_die/delivery_forensics.py), [`exposure_assessment.py`](src/no_time_to_die/exposure_assessment.py); [`mission.py`](src/no_time_to_die/mission.py).
+
 ## Concepts
 
 | Module | Concept | What it computes |
