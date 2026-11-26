@@ -1,5 +1,7 @@
 # docs/AGENTS.md
 
+[Package maintenance](package-maintenance.md) identifies the dependency and citation records.
+
 Index for the `no_time_to_die` (HERACLES) documentation hub. The documents
 here are operational guidance for agents; the enforced gates live in
 `pyproject.toml`, the test suite, and the code-review protocol in `AGENTS.md`.

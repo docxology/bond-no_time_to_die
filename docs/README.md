@@ -1,5 +1,7 @@
 # docs/ — Agent-Facing Documentation Hub (HERACLES)
 
+[Package maintenance](package-maintenance.md) covers dependency and release records.
+
 Technical rulebook for agents and developers working inside the
 `no_time_to_die` (HERACLES) film package.
 

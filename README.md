@@ -1,5 +1,7 @@
 # no_time_to_die — HERACLES · Special-Agent Mission Software
 
+See [package maintenance](docs/package-maintenance.md) for dependency and citation records.
+
 Film package for **No Time to Die** (2021) in the PROJECT BOND suite, mission
 codename **HERACLES**. A deterministic, fully-tested Python package that models
 the pharmaco-forensic concepts of the film as real mathematics with a
