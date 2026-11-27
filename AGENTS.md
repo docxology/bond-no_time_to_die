@@ -1,5 +1,8 @@
 # no_time_to_die (HERACLES) — AGENTS.md
 
+The [package maintenance guide](docs/package-maintenance.md) records the
+distribution identity, Python selection, dependency provenance, and citation metadata.
+
 Technical directives for the maintainer/build agent of this PROJECT BOND film
 package: **No Time to Die (2021)**, mission codename **HERACLES**.
 
